@@ -151,7 +151,7 @@ framework in Phase 1 does not apply to it).
 
 ```bash
 # 1. Navigate to directory
-cd JFC/src
+cd jfc-recycled-water-viability-tool
 
 # 2. Install dependencies
 pip install -r requirements.txt
