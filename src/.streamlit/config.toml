@@ -1,0 +1,7 @@
+[theme]
+# Force light as the default theme instead of following the visitor's
+# OS/browser "system" dark-mode preference. The Settings menu's theme
+# picker (Light / Dark / Use system setting) is still reachable, so a user
+# can still manually switch within their own session — this only stops the
+# app from auto-switching based on their system setting.
+base = "light"
