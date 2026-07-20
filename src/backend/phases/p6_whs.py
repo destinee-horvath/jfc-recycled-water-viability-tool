@@ -118,8 +118,8 @@ def assess_whs(inp: dict, ctx: dict = None) -> PhaseResult:
             f"{contact.lower()} contact."))
 
     # --- WHS notification / PPE / SWMS / signage checklist ------------------
-    # Client review: one combined check, not 5 separate ones — the detail
-    # text below enumerates all five, not just the missing one(s).
+    # One combined check, not 5 separate ones — the detail text below
+    # enumerates all five, not just the missing one(s).
     all_confirmed = all(inp.get(key) for key, _ in C.WHS_CHECKS)
     if all_confirmed:
         g.checks.append(CheckResult(

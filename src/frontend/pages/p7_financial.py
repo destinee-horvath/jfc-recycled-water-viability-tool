@@ -5,9 +5,10 @@ PHASE — Financial Feasibility
 
 Collects inputs across six sections (Water Costs, Pavement Profile, Road
 Geometry, Transport & Operational Costs, Dust Suppression, Concrete Kerb +
-Elements) — all always shown, matching Financials_excel_sheet.xlsx, which
-has no gate on any of these by Water Quality's selected application type —
-and renders backend.financial_analysis()'s output as a cost summary. All
+Elements) — all always shown, matching the client's original cost model,
+which has no gate on any of these by Water Quality's selected application
+type — and renders backend.financial_analysis()'s output as a cost
+summary. All
 calculation logic lives in backend/phases/p7_financial.py — this module
 only collects inputs and displays results.
 """
@@ -116,8 +117,8 @@ def page_financial(results):
     total_width_m = _road_geometry_section(d)
     _transport_section(d)
     # Dust suppression and concrete kerb+elements are always shown and always
-    # included in the combined project volume — Financials_excel_sheet.xlsx
-    # has no gate on either by Water Quality's selected application type.
+    # included in the combined project volume — the source model has no
+    # gate on either by Water Quality's selected application type.
     _dust_suppression_section(d)
     _concrete_mixing_section(d)
 
@@ -168,7 +169,7 @@ def _water_costs_section(d):
                     "Custom drought savings ($/kL)", min_value=0.0,
                     value=float(d["drought_savings_custom"]), key="financial_drought_savings_custom",
                     help="Recorded for the record only — not yet wired into the "
-                         "cost comparison below; the source spreadsheet does not "
+                         "cost comparison below; the source model does not "
                          "define how it combines with the drought cost above.")
 
 
@@ -452,12 +453,12 @@ def _dust_suppression_section(d):
             d["project_duration_days"] = st.number_input(
                 "Project duration (days)", min_value=0.0,
                 value=float(d["project_duration_days"]), key="financial_project_duration_days",
-                help="Not in the original spreadsheet — added because the "
-                     "spreadsheet's own day-count formula for dust suppression "
-                     "cancelled out algebraically to always equal the pavement "
-                     "volume, making it independent of every other dust-"
-                     "suppression input above. This field replaces it with an "
-                     "explicit, editable duration.")
+                help="Not in the original cost model — added because its own "
+                     "day-count formula for dust suppression cancelled out "
+                     "algebraically to always equal the pavement volume, "
+                     "making it independent of every other dust-suppression "
+                     "input above. This field replaces it with an explicit, "
+                     "editable duration.")
 
 
 def _concrete_mixing_section(d):
@@ -558,8 +559,7 @@ def _cost_summary_section(fa: dict, d: dict):
     c3.metric("Concrete kerb + elements", f"{fa['concrete_water_kL']:,.1f} kL")
     c4.metric("Combined total", f"{fa['combined_total_volume_kL']:,.1f} kL")
 
-    st.markdown("**Water costs comparison** (rounded up to whole dollars, "
-                "matching the client's spreadsheet)")
+    st.markdown("**Water costs comparison** (rounded up to whole dollars)")
     c1, c2, c3 = st.columns(3)
     c1.metric("Potable (normal)", f"${fa['potable_water_cost_normal']:,.0f}")
     c2.metric("Recycled", f"${fa['recycled_water_cost']:,.0f}")

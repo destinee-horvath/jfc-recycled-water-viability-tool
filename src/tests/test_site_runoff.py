@@ -68,8 +68,7 @@ def test_proceed_when_not_extraction_or_processing_regardless_of_tonnes():
 
 
 def test_schedule_1_check_runs_before_epl_check():
-    """Client asked to confirm Schedule 1 runs before EPL, swapping only if
-    it didn't — it already does; this pins that ordering."""
+    """Confirms Schedule 1 runs before EPL — this pins that ordering."""
     inp = dict(VALID, involves_extraction_or_processing=True,
                project_tonnes=999999, in_regulated_area=True)
     r = assess_site_runoff(inp)

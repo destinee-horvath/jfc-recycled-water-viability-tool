@@ -14,9 +14,9 @@ Two independent checks:
    risks degrading the structure of the NATURAL subgrade soil (dispersion/
    slaking, loss of permeability and strength) — see config.py's "PHASE 5 —
    SAR/EC soil structural stability" section for the boundary formula and
-   its provenance. Never a hard REJECT (client decision, 2026-07-14) —
-   remediable via soil dispersion testing and gypsum/lime amendment, so the
-   worst outcome here is CONDITIONAL.
+   its provenance. Never a hard REJECT — remediable via soil dispersion
+   testing and gypsum/lime amendment, so the worst outcome here is
+   CONDITIONAL.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from ..models import CheckResult, PhaseResult
 
 
 def _stability_threshold_sar(ec_dsm: float) -> float:
-    """SAR threshold at a given EC, per the client-derived linear stability
+    """SAR threshold at a given EC, per the team-derived linear stability
     boundary (SAR = slope*EC + intercept) — see config.py's PHASE 5 SAR/EC
     section. A sample is stable if its actual SAR is on/below this line."""
     return C.SOIL_STABILITY_SLOPE * ec_dsm + C.SOIL_STABILITY_INTERCEPT

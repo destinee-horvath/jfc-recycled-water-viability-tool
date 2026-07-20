@@ -6,7 +6,7 @@ is a checklist tool, not a sequential gate — every phase is always assessed
 and always editable, regardless of any other phase's outcome; a REJECT
 anywhere only adds to the blocking list, never blocks downstream phases.
 
-No single pass/fail verdict or score — removed; clients only want the
+No single pass/fail verdict or score by design — just the
 blocking/pending/confirmed breakdown. The WHS buffer-zone check is always
 CONDITIONAL (see backend/phases/p6_whs.py), so WHS itself — and therefore
 every assessment as a whole — can never resolve to "everything PROCEEDs";

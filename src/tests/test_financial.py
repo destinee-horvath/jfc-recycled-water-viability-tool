@@ -3,9 +3,9 @@ tests/test_financial.py
 =====================
 PHASE — Financial Feasibility: pavement/dust-suppression/concrete-kerb
 water-volume model and the whole-of-project potable-vs-recycled cost
-comparison built on top of it. Ported cell-for-cell from
-Financials_excel_sheet.xlsx (the client's real Excel model, treated as
-ground truth) — see backend/phases/p7_financial.py's module docstring.
+comparison built on top of it. Ported term-for-term from the client's
+original cost model, treated as ground truth — see
+backend/phases/p7_financial.py's module docstring.
 No REJECT case — an unfavourable cost comparison is CONDITIONAL only,
 never a hard reject; asserted as an invariant below.
 """
@@ -23,8 +23,9 @@ from backend.phases.p7_financial import (
 # ---------------------------------------------------------------------------
 # financial_analysis() with defaults (inp={}) — every field falls back to
 # config.FINANCIAL_DEFAULTS, so this doubles as a defaults sanity check.
-# Every expected value below is hand-derived from the sheet's own formulas
-# (see backend/phases/p7_financial.py), not from an external worked example.
+# Every expected value below is hand-derived from the source model's own
+# formulas (see backend/phases/p7_financial.py), not from an external
+# worked example.
 # ---------------------------------------------------------------------------
 def test_defaults_produce_expected_pavement_volume():
     fa = financial_analysis({})
@@ -47,9 +48,9 @@ def test_defaults_water_cost_mode_is_standard_port_macquarie():
     assert fa["recycled_cost_normal"] == rates["recycled_cost_normal"]
 
 
-def test_region_table_matches_client_spreadsheet():
-    """Financials_excel_sheet.xlsx's D7/E7/D8 IFS tables, keyed off D11 —
-    ground truth, not a placeholder."""
+def test_region_table_matches_client_reference_data():
+    """Real client region/rate lookup data — ground truth, not a
+    placeholder."""
     expected = {
         "Sydney":         (3.41, 3.84, 3.07),
         "Ballina":        (6.82, 6.82, 0.30),
@@ -64,14 +65,14 @@ def test_region_table_matches_client_spreadsheet():
         assert fa["recycled_cost_normal"] == pytest.approx(recycled), region
 
 
-def test_area_type_speeds_match_client_spreadsheet():
-    """Financials_excel_sheet.xlsx's N9 IFS table, keyed off area type."""
+def test_area_type_speeds_match_client_reference_data():
+    """Real client default-speed lookup data, keyed off area type."""
     assert C.AREA_TYPE_SPEEDS["Urban (dense city)"] == pytest.approx(40.0)
     assert C.AREA_TYPE_SPEEDS["Urban"] == pytest.approx(50.0)
     assert C.AREA_TYPE_SPEEDS["Rural"] == pytest.approx(60.0)
 
 
-def test_defaults_transport_matches_client_spreadsheet_formula():
+def test_defaults_transport_matches_client_source_formula():
     fa = financial_analysis({})
     # volume_per_day_kL = 5 trucks * 4 trips * 15 kL = 300
     assert fa["volume_per_day_kL"] == pytest.approx(300.0)
@@ -86,9 +87,9 @@ def test_defaults_transport_matches_client_spreadsheet_formula():
 
 
 def test_trips_per_truck_multiplies_travel_hours_and_fuel_not_onsite_hours():
-    """Matches the client spreadsheet's L20 = (distance/speed)*2*trips
-    exactly — trips_per_truck scales travel hours (and therefore fuel) but
-    not hours_onsite (L22 = trucks*hours_onsite, no trips factor)."""
+    """Matches the source model exactly — trips_per_truck scales travel
+    hours (and therefore fuel) but not hours_onsite (trucks*hours_onsite,
+    no trips factor)."""
     base = financial_analysis({"trips_per_truck": 1})
     doubled = financial_analysis({"trips_per_truck": 2})
     # Travel-hours-derived component doubles; onsite-hours component doesn't,
@@ -98,9 +99,9 @@ def test_trips_per_truck_multiplies_travel_hours_and_fuel_not_onsite_hours():
 
 
 def test_fuel_cost_uses_hardcoded_50_not_actual_speed():
-    """Matches the client spreadsheet's L24/L36 exactly — fuel cost is
-    computed as if speed were always 50km/h, regardless of the area-type
-    speed actually selected. A sheet quirk, implemented literally, not
+    """Matches the source model exactly — fuel cost is computed as if
+    speed were always 50km/h, regardless of the area-type speed actually
+    selected. A source-model quirk, implemented literally, not
     "corrected" — see _transport_cost_per_day()'s docstring."""
     urban = financial_analysis({"area_type": "Urban"})          # speed 50
     rural = financial_analysis({"area_type": "Rural"})           # speed 60
@@ -114,9 +115,9 @@ def test_fuel_cost_uses_hardcoded_50_not_actual_speed():
 
 # ---------------------------------------------------------------------------
 # Dust suppression — ALWAYS computed and included (no application-type
-# gate — the client spreadsheet has none). An earlier, disputed version of
-# this module gated dust suppression behind Water Quality's selected
-# application type; that gate has been removed.
+# gate — the source model has none). An earlier version of this module
+# gated dust suppression behind Water Quality's selected application type;
+# that gate has been removed.
 # ---------------------------------------------------------------------------
 def test_dust_suppression_always_computed():
     fa = financial_analysis({})
@@ -129,8 +130,8 @@ def test_dust_suppression_always_computed():
 
 
 def test_dust_suppression_volume_scales_with_project_duration_days():
-    """project_duration_days (matching the sheet's D46, a plain independent
-    input) scales the volume linearly."""
+    """project_duration_days (a plain independent input) scales the volume
+    linearly."""
     fa_short = financial_analysis({"project_duration_days": 5})
     fa_long = financial_analysis({"project_duration_days": 50})
     assert fa_long["total_dust_suppression_kL"] == pytest.approx(
@@ -162,9 +163,9 @@ def test_concrete_mixing_kerb_type_lookup():
     assert fa_sl["kerb_concrete_volume_m3"] == pytest.approx(102.0)   # 0.102 * 1000
 
 
-def test_concrete_mixing_water_cement_ratio_table_matches_client_spreadsheet():
-    """The 0.38 entry was corrected to 0.133 (confirmed with the client,
-    2026-07-19) — the source spreadsheet's own D54 cell read 13.3, a typo."""
+def test_concrete_mixing_water_cement_ratio_table_matches_client_reference_data():
+    """The 0.38 entry is 0.133 — corrected from a typo in the original
+    source data, which read 13.3."""
     for ratio, fraction in C.CONCRETE_WATER_CEMENT_RATIO_TABLE.items():
         fa = financial_analysis({"water_cement_ratio": ratio, "road_length_m": 0,
                                   "additional_concrete_volume_m3": 100})
@@ -173,9 +174,9 @@ def test_concrete_mixing_water_cement_ratio_table_matches_client_spreadsheet():
 
 
 # ---------------------------------------------------------------------------
-# Combined project volume (H27 = D35+D48+D57) — pavement + dust suppression
-# + concrete kerb, ALWAYS summed together. No branching by application
-# type anywhere — matches the client spreadsheet, which has none.
+# Combined project volume — pavement + dust suppression + concrete kerb,
+# ALWAYS summed together. No branching by application type anywhere —
+# matches the source model, which has none.
 # ---------------------------------------------------------------------------
 def test_combined_volume_is_always_the_sum_of_all_three_components():
     fa = financial_analysis({})
@@ -199,7 +200,7 @@ def test_zero_dust_and_concrete_inputs_still_only_leave_pavement():
 
 
 # ---------------------------------------------------------------------------
-# Delivery days (§10, L44-L46) — pavement+concrete are trucked and divided
+# Delivery days (§10) — pavement+concrete are trucked and divided
 # by daily fleet capacity; dust suppression has its own independent day
 # count (project_duration_days) added on top, not divided in.
 # ---------------------------------------------------------------------------
@@ -252,8 +253,8 @@ def test_zero_trucks_gives_zero_trucked_days_but_dust_days_remain():
 
 
 # ---------------------------------------------------------------------------
-# Water costs (§7, H30-H34) — ROUNDUP'd to whole dollars, matching the
-# client spreadsheet's own ROUNDUP(...,0) exactly.
+# Water costs (§7) — rounded up to whole dollars, matching the
+# source model's own rounding exactly.
 # ---------------------------------------------------------------------------
 def test_water_costs_are_rounded_up_to_whole_dollars():
     fa = financial_analysis({})
@@ -266,15 +267,15 @@ def test_water_costs_are_rounded_up_to_whole_dollars():
 
 
 def test_savings_derived_from_rounded_water_costs():
-    """H33 = H30 - H31, H34 = H32 - H31 — computed from the already-rounded
-    figures, matching the sheet exactly."""
+    """Savings are computed from the already-rounded water-cost figures,
+    matching the source model exactly."""
     fa = financial_analysis({})
     assert fa["savings_normal"] == fa["potable_water_cost_normal"] - fa["recycled_water_cost"]
     assert fa["savings_drought"] == fa["potable_water_cost_drought"] - fa["recycled_water_cost"]
 
 
 def test_volumes_and_transport_costs_are_not_rounded():
-    """Only the four final water-cost outputs are ROUNDUP'd — every
+    """Only the four final water-cost outputs are rounded up — every
     intermediate volume and per-day transport cost stays full precision."""
     fa = financial_analysis({})
     assert fa["concrete_water_kL"] == pytest.approx(74.97, abs=0.01)
@@ -283,7 +284,7 @@ def test_volumes_and_transport_costs_are_not_rounded():
 
 
 # ---------------------------------------------------------------------------
-# Profit / Loss (§10, G45/G46/I45/I46) — new output, not previously in the
+# Profit / Loss (§10) — new output, not previously in the
 # tool. profit = max(savings - transport_cost_difference, 0).
 # ---------------------------------------------------------------------------
 def test_profit_loss_matches_defaults_hand_calculation():
@@ -336,7 +337,7 @@ def test_standard_mode_region_lookup_overrides_default_region():
 
 
 def test_drought_savings_custom_is_recorded_but_not_used_in_totals():
-    """The client spreadsheet doesn't define a formula for this field — it's
+    """The source model doesn't define a formula for this field — it's
     stored on the output dict for the record but must not silently affect
     any total/savings figure."""
     low = financial_analysis({"water_cost_mode": "Custom", "drought_savings_custom": 0})
@@ -468,9 +469,9 @@ def test_breakeven_none_when_transport_cost_independent_of_distance():
 
 
 # ---------------------------------------------------------------------------
-# Per-layer "relevant to this job" inclusion checkbox. Not in the client
-# spreadsheet (which has no exclusion mechanism at all — every layer is
-# always summed) — a deliberate tool usability enhancement, kept as-is.
+# Per-layer "relevant to this job" inclusion checkbox. Not in the source
+# model (which has no exclusion mechanism at all — every layer is always
+# summed) — a deliberate tool usability enhancement, kept as-is.
 # ---------------------------------------------------------------------------
 def test_all_layers_included_by_default():
     fa = financial_analysis({})

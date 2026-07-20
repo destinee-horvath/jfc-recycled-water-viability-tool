@@ -3,9 +3,9 @@ backend/orchestration.py
 =========================
 ORCHESTRATION — run all phases, roll up per-check readiness.
 
-No single pass/fail verdict or numeric score is computed here (removed —
-clients only want the blocking/pending/confirmed breakdown, not a headline
-VIABLE/CONDITIONAL/NOT VIABLE judgment or a 0-100 score). Each phase's own
+No single pass/fail verdict or numeric score is computed here by design —
+the blocking/pending/confirmed breakdown is the point, not a headline
+VIABLE/CONDITIONAL/NOT VIABLE judgment or a 0-100 score. Each phase's own
 state (PROCEED/CONDITIONAL/REJECT/NA) still exists and still rolls up
 per-section (section_rollup) — only the single overall app-wide verdict is
 gone.

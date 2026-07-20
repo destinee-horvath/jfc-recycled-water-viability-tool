@@ -2,7 +2,7 @@
 frontend/pages/compare.py
 ==========================
 Side-by-side phase-outcome comparison of two saved assessments. No headline
-verdict/score — removed; clients only want the per-phase/per-check states.
+verdict/score by design — just the per-phase/per-check states.
 """
 
 import streamlit as st

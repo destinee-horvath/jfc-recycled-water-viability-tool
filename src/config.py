@@ -346,8 +346,8 @@ CONCRETE_TABLE_2_3 = {
     "conc_sodium":   {"label": "Sodium equivalent",       "ref": "AS 1379 Table 2.3 — APHA 3500"},
 }
 
-# Client-confirmed: applies to Concrete Mixing too (not just Dust
-# Suppression), at Earthworks' less-restrictive tier — see EARTHWORKS_MICRO_TABLE.
+# Applies to Concrete Mixing too (not just Dust Suppression), at Earthworks'
+# less-restrictive tier — see EARTHWORKS_MICRO_TABLE.
 CONCRETE_ECOLI = {"label": "E. coli", "unit": "cfu/100mL", "max": 100,
                    "ref": "AGWR Phase 1 (2006) Table 3.8"}
 
@@ -366,10 +366,10 @@ EARTHWORKS_TABLE_3_1 = {
     "ew_tss":      {"label": "Total suspended solids", "unit": "ppm", "max": 15000, "ref": "Table 3-1 — AS 3550.4 or APHA 2540 D"},
 }
 
-# Client-confirmed: applies to all three application types, not just Dust
-# Suppression. Earthworks isn't public-facing, so this uses a less-strict
-# tier than Dust Suppression's below (E. coli ≤100 vs ≤1 cfu/100mL) — this
-# tier split wasn't explicit in the client's feedback, worth confirming.
+# Applies to all three application types, not just Dust Suppression.
+# Earthworks isn't public-facing, so this uses a less-strict tier than Dust
+# Suppression's below (E. coli ≤100 vs ≤1 cfu/100mL) — this tier split isn't
+# explicitly spelled out in the source guidance, worth double-checking.
 EARTHWORKS_MICRO_TABLE = {
     "ew_bod_mgl": {"label": "BOD",                  "unit": "mg/L",      "max": 20,  "ref": "AGWR Phase 1 (2006) Table 3.8"},
     "ew_ss_mgl":  {"label": "Suspended Solids (SS)", "unit": "mg/L",      "max": 30,  "ref": "AGWR Phase 1 (2006) Table 3.8"},
@@ -588,8 +588,8 @@ BASE_LAYER_DEFAULTS = {
 # PHASE 5 — SAR/EC soil structural stability (recycled water on subgrade)
 #
 # Whether the water risks degrading the NATURAL subgrade soil's structure
-# (dispersion/slaking). Never a hard REJECT (client decision, 2026-07-14) —
-# remediable via soil testing + gypsum/lime amendment.
+# (dispersion/slaking). Never a hard REJECT — remediable via soil testing +
+# gypsum/lime amendment.
 #
 # Stable if actual SAR <= SOIL_STABILITY_SLOPE*EC + SOIL_STABILITY_INTERCEPT
 # at that EC; above the line is unstable. Team-derived fit (see
@@ -598,7 +598,7 @@ BASE_LAYER_DEFAULTS = {
 # don't mix with the USSL uS/cm axis below.
 # ----------------------------------------------------------------------------
 SOIL_SAR_EC_REF = (
-    "Team-derived linear approximation (2026-07-14) of the SAR-EC "
+    "Team-derived linear approximation of the SAR-EC "
     "structural-stability boundary in ANZG (2023) Water Quality for "
     "Irrigation and General Water Uses: Guidelines, draft revised Ch 4.2 "
     "s.3.2, Fig 2, p.12 — SAR = 4.3 x EC - 0.4 (EC in dS/m). Not an "
@@ -696,10 +696,10 @@ CONTACT_RISK_MIN_CLASS = {
 WATER_CLASS_REF = "AGWR Phase 1 (2006) — water quality class framework"
 
 # ----------------------------------------------------------------------------
-# PHASE 7 — Financial Feasibility (never a hard reject). Cost/volume model,
-# per the client's Excel spreadsheet: pavement + optional dust-suppression
-# water demand, trucked in from potable/recycled sources, compared whole-of-
-# project under normal/drought pricing. See backend/phases/p7_financial.py.
+# PHASE 7 — Financial Feasibility (never a hard reject). Cost/volume model:
+# pavement + optional dust-suppression water demand, trucked in from
+# potable/recycled sources, compared whole-of-project under normal/drought
+# pricing. See backend/phases/p7_financial.py.
 # ----------------------------------------------------------------------------
 FINANCIAL_REF = ("Whole-of-life cost comparison vs potable baseline, including "
                  "trucking. Unfavourable cost is CONDITIONAL only — the client "
@@ -720,9 +720,10 @@ FINANCIAL_DEFAULTS = {
     "potable_cost_drought": 8.84,        # $/kL — Custom mode only
     "recycled_cost_normal": 2.22,        # $/kL — Custom mode only
     "drought_savings_custom": 20.00,     # $/kL — Custom mode only; recorded
-                                          # for the file only, not currently
-                                          # consumed by any calculation (the
-                                          # spreadsheet did not define how).
+                                          # for the record only, not currently
+                                          # consumed by any calculation (how it
+                                          # combines with the other costs is
+                                          # undefined).
 
     # --- Section 2: Pavement profile (per layer) ---
     # "included" (default True) lets the engineer exclude a layer that
@@ -739,7 +740,7 @@ FINANCIAL_DEFAULTS = {
     "lane_width_m": 3.5,
     "shoulder_width_m": 1.0,
     "num_shoulders": 2,
-    "road_length_m": 5000.0,   # matches Financials_excel_sheet.xlsx's D27
+    "road_length_m": 5000.0,
 
     # --- Section 4: Transport & operational costs ---
     "num_trucks": 5,
@@ -755,40 +756,37 @@ FINANCIAL_DEFAULTS = {
     "avg_speed_kmh": 50.0,
 
     # --- Dust suppression — always included in the combined project volume
-    # (Financials_excel_sheet.xlsx has no application-type gate on this) ---
+    # (no application-type gate on this) ---
     "surface_area_m2": 36000.0,
     "site_conditions": "Medium",
     "temperature_conditions": "Sunny",
     "applications_per_day": 5,
     "water_per_m2_L": 4.0,
     "effective_area_pct": 30.0,
-    # Matches Financials_excel_sheet.xlsx's D46 — a legitimate, independent
-    # user input (not derived from any other cell), used both as the dust
-    # suppression day count here and, separately, as dust_suppression_days
-    # in the delivery-day split (see backend/phases/p7_financial.py).
+    # A legitimate, independent user input (not derived from any other
+    # value), used both as the dust suppression day count here and,
+    # separately, as dust_suppression_days in the delivery-day split (see
+    # backend/phases/p7_financial.py).
     "project_duration_days": 20,
 
     # --- Concrete Kerb + Elements — always included in the combined
-    # project volume (Financials_excel_sheet.xlsx has no application-type
-    # gate on this either) ---
+    # project volume (no application-type gate on this either) ---
     "kerb_type": "SL (standard road)",
     "water_cement_ratio": 0.42,
     "additional_concrete_volume_m3": 0.0,   # drainage pits, aprons, etc. — not covered by the kerb lookup
 }
 
 # Concrete Kerb + Elements' kerb concrete volume per metre of road length
-# (m^3/m). Matches Financials_excel_sheet.xlsx's D51 IFS table exactly —
-# this is the real client kerb-volume data, not a placeholder.
+# (m^3/m). Real client kerb-volume data, not a placeholder.
 CONCRETE_KERB_VOLUME_PER_M = {
     "SA (standard residential)": 0.154,
     "SL (standard road)": 0.102,
 }
 
 # Concrete Kerb + Elements' water-cement-ratio -> water volume fraction of
-# total concrete volume. This is the real client lookup data, not a
-# placeholder — matches Financials_excel_sheet.xlsx's D54 IFS table, with
-# the 0.38 entry corrected to 0.133 (confirmed with the client, 2026-07-19,
-# as a typo in the source spreadsheet's D54 cell — the sheet itself read 13.3).
+# total concrete volume. Real lookup data, not a placeholder — the 0.38
+# entry is 0.133 (corrected from a typo in the original source data,
+# which read 13.3).
 CONCRETE_WATER_CEMENT_RATIO_TABLE = {
     0.35: 0.1225,
     0.38: 0.133,
@@ -796,8 +794,7 @@ CONCRETE_WATER_CEMENT_RATIO_TABLE = {
     0.45: 0.1575,
 }
 
-# Matches Financials_excel_sheet.xlsx's D7/E7/D8 IFS tables (keyed off D11)
-# exactly — this is the real client region/rate data, not a placeholder.
+# Real client region/rate data, not a placeholder.
 FINANCIAL_REGIONS = {
     "Sydney":          {"potable_cost_normal": 3.41, "potable_cost_drought": 3.84, "recycled_cost_normal": 3.07},
     "Ballina":         {"potable_cost_normal": 6.82, "potable_cost_drought": 6.82, "recycled_cost_normal": 0.30},
@@ -806,8 +803,7 @@ FINANCIAL_REGIONS = {
     "Dubbo":           {"potable_cost_normal": 2.25, "potable_cost_drought": 6.00, "recycled_cost_normal": 1.45},
 }
 
-# Matches Financials_excel_sheet.xlsx's N9 IFS table (keyed off area type)
-# exactly.
+# Default average travel speed by area type, real client data.
 AREA_TYPE_SPEEDS = {"Urban (dense city)": 40.0, "Urban": 50.0, "Rural": 60.0}
 
 DUST_SITE_CONDITIONS = ["Low", "Medium", "High"]

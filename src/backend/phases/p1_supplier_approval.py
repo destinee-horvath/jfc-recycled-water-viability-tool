@@ -66,10 +66,10 @@ def assess_supplier_approval(inp: dict, ctx: dict = None) -> PhaseResult:
 
     else:
         # --- Check 4/5: supplier type routing -> council or water authority approval ---
-        # Private scheme (s.68 greywater/blackwater) was removed per client
-        # review: s.68 private-scheme approvals are for small-scale septic
-        # systems, not a credible pathway for recycled water at roadworks
-        # scale. Only council-run and water-authority schemes remain here.
+        # Private scheme (s.68 greywater/blackwater) is not covered: s.68
+        # private-scheme approvals are for small-scale septic systems, not a
+        # credible pathway for recycled water at roadworks scale. Only
+        # council-run and water-authority schemes remain here.
         authority = inp.get("supplier_authority", C.SUPPLIER_AUTHORITIES[0])
         ref = C.SUPPLIER_APPROVAL_REFS.get(authority, "")
         label = "Supplier: statutory supply approval held?"

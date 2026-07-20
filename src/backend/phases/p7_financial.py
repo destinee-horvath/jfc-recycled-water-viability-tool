@@ -3,35 +3,35 @@ backend/phases/p7_financial.py
 ========================
 PHASE — FINANCIAL FEASIBILITY (never a hard reject)
 
-Ported cell-for-cell from Financials_excel_sheet.xlsx (the client's real
-Excel model) — treated as ground truth. Where this disagreed with the
-tool's earlier implementation or the URS/SRS, the documentation was updated
-to match the sheet, not the other way around. Sheet quirks that look like
-bugs are implemented literally, not "corrected" — each is flagged with a
-comment at the point it's implemented rather than silently fixed.
+Ported term-for-term from the client's original cost model — treated as
+ground truth. Where this disagreed with the tool's earlier implementation
+or the URS/SRS, the documentation was updated to match the model, not the
+other way around. Quirks in the source model that look like bugs are
+implemented literally, not "corrected" — each is flagged with a comment at
+the point it's implemented rather than silently fixed.
 
-Combined project volume (H27 = D35 + D48 + D57) is pavement + dust
-suppression + concrete kerb/elements, ALWAYS summed together — the sheet
-has no branching by Water Quality's selected application type anywhere.
-(An earlier version of this module gated dust-suppression/concrete volume
-behind application_type — that came from an unconfirmed, disputed source
-and has been removed; the sheet has no such gate.)
+Combined project volume (§6) is pavement + dust suppression + concrete
+kerb/elements, ALWAYS summed together — the source model has no branching
+by Water Quality's selected application type anywhere. (An earlier version
+of this module gated dust-suppression/concrete volume behind
+application_type — that was based on an unverified assumption and has
+been removed; the source model has no such gate.)
 
-Delivery days split into two additive parts (§10, L44-L46): pavement +
-concrete are trucked and divided by the fleet's daily capacity
-(delivery_days_trucked); dust suppression has its own independent day
-count (project_duration_days, a direct input — matches the sheet's D46)
-added on top, not divided into the trucked-volume calculation.
+Delivery days split into two additive parts (§10): pavement + concrete are
+trucked and divided by the fleet's daily capacity (delivery_days_trucked);
+dust suppression has its own independent day count (project_duration_days,
+a direct input) added on top, not divided into the trucked-volume
+calculation.
 
-Water costs (H30-H34) are ROUNDUP'd to whole dollars, matching the sheet's
-own ROUNDUP(...,0). Everything else (volumes, per-day transport costs, the
-break-even chart) stays full precision — the sheet doesn't round those, and
-the break-even chart specifically needs continuous values to find a
-crossing point.
+Water costs (§7) are rounded up to whole dollars, matching the source
+model's own rounding. Everything else (volumes, per-day transport costs,
+the break-even chart) stays full precision — the source model doesn't
+round those, and the break-even chart specifically needs continuous values
+to find a crossing point.
 
-One long-standing gap unrelated to the sheet: ``drought_savings_custom``
+One long-standing gap unrelated to the source model: ``drought_savings_custom``
 (Custom water-cost mode) is collected and stored on the input dict for the
-record, but the sheet doesn't define how it should be used alongside
+record, but the source model doesn't define how it should be used alongside
 potable_cost_drought / recycled_cost_normal, so it's not consumed by any
 calculation below.
 """
@@ -49,8 +49,8 @@ _LAYER_NAMES = ("subgrade", "subbase", "base")
 def _layer_volume_kL(layer: dict, total_width_m: float, road_length_m: float) -> float:
     """Water needed to bring one pavement layer from current to optimum
     moisture content, across the full road width and length. Matches the
-    sheet's D31/D32/D33 exactly (same terms, different multiplication
-    order — mathematically identical)."""
+    source model exactly (same terms, different multiplication order —
+    mathematically identical)."""
     return (((layer["omc_pct"] - layer["mc_pct"]) / 100)
             * layer["thickness_m"] * total_width_m * road_length_m
             * layer["density_kg_m3"] / 1000)
@@ -60,15 +60,14 @@ def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_tru
                              avg_speed_kmh: float, hours_onsite: float, hire_rate_per_hr: float,
                              fuel_efficiency: float, diesel_price: float) -> float:
     """Whole-fleet daily hire + fuel cost for one source. Matches the
-    sheet's L20-L25 / L32-L37 exactly, including its quirks:
+    source model exactly, including its quirks:
       * trips_per_truck multiplies into travel hours (and therefore fuel)
-        but NOT hours_onsite — matches L20 = (distance/speed)*2*trips.
+        but NOT hours_onsite.
       * Fuel cost uses a hardcoded 50 (assumed km/h) rather than the
-        area-type-dependent avg_speed_kmh — matches L24/L36 exactly; not
-        linked to the area-type speed selector. Confirm with the client
-        before changing — this silently misprices fuel whenever the
-        selected area type's speed isn't 50 (i.e. whenever it isn't
-        "Urban").
+        area-type-dependent avg_speed_kmh; not linked to the area-type
+        speed selector. Confirm this assumption before changing it — this
+        silently misprices fuel whenever the selected area type's speed
+        isn't 50 (i.e. whenever it isn't "Urban").
     """
     travel_hours_per_truck = ((distance_km / avg_speed_kmh) * 2 * trips_per_truck
                                if avg_speed_kmh > 0 else 0.0)
@@ -81,11 +80,11 @@ def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_tru
 
 def financial_analysis(inp: dict) -> dict:
     """Combined water-volume + whole-of-project cost model — see module
-    docstring. No longer takes an application_type argument: the sheet
-    doesn't gate any Phase 7 calculation on Water Quality's selection."""
+    docstring. No longer takes an application_type argument: the source
+    model doesn't gate any Phase 7 calculation on Water Quality's selection."""
     D = C.FINANCIAL_DEFAULTS
 
-    # --- Water costs (§1: D7/D8/E7/F7/F8/G7, keyed off D11) -------------------
+    # --- Water costs (§1, keyed off region) -------------------
     mode = inp.get("water_cost_mode", D["water_cost_mode"])
     if mode == "Standard":
         region = inp.get("region", D["region"])
@@ -121,9 +120,10 @@ def financial_analysis(inp: dict) -> dict:
     total_width_m = (num_lanes * lane_width_m) + (num_shoulders * shoulder_width_m)
 
     # Volumes are always computed for every layer (informational, even when
-    # excluded via the "included" checkbox — a tool feature the sheet has
-    # no equivalent of, since it has no mechanism to exclude a layer at
-    # all; kept since it's a genuine usability improvement, not a bug).
+    # excluded via the "included" checkbox — a tool feature the source
+    # model has no equivalent of, since it has no mechanism to exclude a
+    # layer at all; kept since it's a genuine usability improvement, not a
+    # bug).
     layer_volumes_kL = {
         name: _layer_volume_kL(layer, total_width_m, road_length_m)
         for name, layer in layers.items()
@@ -170,7 +170,7 @@ def financial_analysis(inp: dict) -> dict:
     kerb_concrete_volume_m3 = kerb_volume_per_m * road_length_m
     concrete_water_kL = (kerb_concrete_volume_m3 + additional_concrete_volume_m3) * water_volume_fraction
 
-    # --- Combined project volume (§6, H27 = D35+D48+D57) ------------------------
+    # --- Combined project volume (§6) --------------------------------------------
     combined_total_volume_kL = total_pavement_volume_kL + total_dust_suppression_kL + concrete_water_kL
 
     # --- Transport costs per day (§8/§9) -----------------------------------------
@@ -181,10 +181,10 @@ def financial_analysis(inp: dict) -> dict:
         recycled_distance_km, num_trucks, trips_per_truck, avg_speed_kmh, hours_onsite,
         hire_rate_per_hr, fuel_efficiency, diesel_price)
 
-    # --- Delivery days (§10, L44/L45) --------------------------------------------
+    # --- Delivery days (§10) ------------------------------------------------------
     # Pavement + concrete are trucked and divided by the fleet's daily
     # capacity; dust suppression's own day count is added on top rather
-    # than divided in — matches the sheet exactly (L45 excludes D48).
+    # than divided in — matches the source model exactly.
     volume_per_day_kL = num_trucks * trips_per_truck * truck_capacity_kL
     trucked_volume_kL = total_pavement_volume_kL + concrete_water_kL
     delivery_days_trucked = (math.ceil(trucked_volume_kL / volume_per_day_kL)
@@ -192,26 +192,27 @@ def financial_analysis(inp: dict) -> dict:
     dust_suppression_days = project_duration_days
     total_delivery_days = delivery_days_trucked + dust_suppression_days
 
-    # --- Water costs (§7, H30-H34) — ROUNDUP to whole dollars, matching the ------
-    # sheet's own ROUNDUP(...,0) exactly.
+    # --- Water costs (§7) — rounded up to whole dollars, matching the source ----
+    # model's own rounding exactly.
     potable_water_cost_normal = math.ceil(combined_total_volume_kL * potable_cost_normal)
     potable_water_cost_drought = math.ceil(combined_total_volume_kL * potable_cost_drought)
     recycled_water_cost = math.ceil(combined_total_volume_kL * recycled_cost_normal)
-    savings_normal = potable_water_cost_normal - recycled_water_cost      # H33
-    savings_drought = potable_water_cost_drought - recycled_water_cost    # H34
+    savings_normal = potable_water_cost_normal - recycled_water_cost
+    savings_drought = potable_water_cost_drought - recycled_water_cost
 
-    # --- Transport cost difference & Profit/Loss (§10, L43/L46, G45/G46/I45/I46) -
-    daily_cost_difference = recycled_transport_cost_per_day - potable_transport_cost_per_day  # L43
-    total_cost_difference = total_delivery_days * daily_cost_difference                        # L46
+    # --- Transport cost difference & Profit/Loss (§10) ---------------------------
+    daily_cost_difference = recycled_transport_cost_per_day - potable_transport_cost_per_day
+    total_cost_difference = total_delivery_days * daily_cost_difference
     profit_normal = max(savings_normal - total_cost_difference, 0)
     loss_normal = max(total_cost_difference - savings_normal, 0)
     profit_drought = max(savings_drought - total_cost_difference, 0)
     loss_drought = max(total_cost_difference - savings_drought, 0)
 
-    # --- Continuous whole-of-project totals — NOT in the sheet, kept only for ---
-    # the break-even chart (FR7.9), which needs a distance-varying continuous
-    # total to find a crossing point; the ROUNDUP'd, water-only H30-H34 above
-    # can't do that on their own since they don't vary with distance at all.
+    # --- Continuous whole-of-project totals — NOT in the source model, kept -----
+    # only for the break-even chart (FR7.9), which needs a distance-varying
+    # continuous total to find a crossing point; the rounded, water-only
+    # figures above can't do that on their own since they don't vary with
+    # distance at all.
     potable_total_cost = (combined_total_volume_kL * potable_cost_normal
                            + potable_transport_cost_per_day * total_delivery_days)
     recycled_total_cost = (combined_total_volume_kL * recycled_cost_normal

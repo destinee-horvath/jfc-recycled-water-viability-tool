@@ -52,7 +52,7 @@ def test_build_xlsx_returns_valid_workbook_bytes():
 
 
 def test_no_final_verdict_row():
-    """Headline verdict/score removed — clients only want the per-check
+    """No headline verdict/score by design — just the per-check
     blocking/pending/confirmed breakdown."""
     ws, results, readiness = _build(_inputs())
     values = [ws.cell(row=r, column=1).value for r in range(1, ws.max_row + 1)]

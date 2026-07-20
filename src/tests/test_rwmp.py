@@ -4,8 +4,8 @@ tests/test_rwmp.py
 PHASE 2 — RWMP: CONDITIONAL / PROCEED coverage. Never a hard reject — RWMP
 existence and end-use coverage are CONDITIONAL (obtainable before works
 commence, mirroring the Phase 1 dual-approval reasoning), same as the
-12-element written-confirmation and currency checks. Deliberate client
-decision, not an oversight: see the SRS "Known Limitations" note.
+12-element written-confirmation and currency checks. This is a deliberate
+design choice, not an oversight: see the SRS "Known Limitations" note.
 
 Check 3 is a supplier written-confirmation flag (rwmp_12_elements_confirmed),
 not an engineer element-by-element audit — DCCEEW already assesses RWMP
@@ -46,7 +46,7 @@ def test_conditional_when_enduse_not_listed():
 
 
 def test_rwmp_never_returns_reject():
-    """Deliberate client decision: no combination of Phase 3 inputs should
+    """Deliberate design choice: no combination of Phase 3 inputs should
     ever produce REJECT."""
     scenarios = [
         {},

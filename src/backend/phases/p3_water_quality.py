@@ -72,7 +72,7 @@ def _assess_concrete(inp: dict) -> PhaseResult:
     for key, meta in C.CONCRETE_TABLE_2_2.items():
         g.checks.append(_limit_check(key, meta["label"], meta, inp.get(key)))
 
-    # --- Microbiological (E. coli) — added per client review feedback -------
+    # --- Microbiological (E. coli) -------------------------------------------
     g.checks.append(_limit_check("conc_ecoli", C.CONCRETE_ECOLI["label"], C.CONCRETE_ECOLI, inp.get("conc_ecoli")))
 
     # --- Filtered water turbidity --------------------------------------------
@@ -139,8 +139,7 @@ def _assess_dust_suppression(inp: dict) -> PhaseResult:
 
 def _assess_earthworks(inp: dict) -> PhaseResult:
     """Earthworks (Compaction) — Table 3-1 impurity limits (Sydney Water
-    Recycled) plus AGWR Phase 1 (2006) Table 3.8 microbiological limits
-    (added per client review feedback)."""
+    Recycled) plus AGWR Phase 1 (2006) Table 3.8 microbiological limits."""
     g = PhaseResult(phase_id="water_quality", mandatory=False)
     for key, meta in C.EARTHWORKS_TABLE_3_1.items():
         g.checks.append(_limit_check(key, meta["label"], meta, inp.get(key)))

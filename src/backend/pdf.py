@@ -16,7 +16,7 @@ from .models import PhaseResult
 def build_pdf(meta: dict, results: dict[str, PhaseResult], readiness: dict) -> bytes:
     """
     Render the Readiness Summary as a PDF for attaching to a project file.
-    No headline verdict/score — removed; clients only want the per-check
+    No headline verdict/score by design — just the per-check
     blocking/pending/confirmed breakdown (see orchestration.readiness_summary).
     Uses reportlab if available; otherwise returns a minimal hand-built PDF
     so the download button always works.

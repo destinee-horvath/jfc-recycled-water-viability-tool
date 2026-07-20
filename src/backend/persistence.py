@@ -68,8 +68,8 @@ def _coerce(v: Any):
 
 def build_record(inputs: dict[str, dict], meta: dict) -> dict:
     """One flat dict = one saved assessment (audit trail + inputs). No
-    verdict/score — removed; clients only want the per-check readiness
-    breakdown (see orchestration.readiness_summary), not a headline verdict."""
+    verdict/score by design — just the per-check readiness breakdown (see
+    orchestration.readiness_summary), not a headline verdict."""
     rec = {
         "assessment_name": meta.get("assessment_name", ""),
         "assessed_by": meta.get("assessed_by", ""),

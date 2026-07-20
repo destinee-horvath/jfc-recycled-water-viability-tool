@@ -6,9 +6,9 @@ PHASE 2 — RWMP (Recycled Water Management Plan)
 Never a hard reject: checks 1-2 (RWMP exists / covers this end use) return
 CONDITIONAL rather than REJECT when missing, since an RWMP can be obtained
 or amended before works commence — mirroring the Phase 1 dual-approval
-reasoning. Deliberate client decision, not an oversight — see the SRS's
-"Known Limitations" note. Their CONDITIONAL detail text still warns this
-should be treated with the same seriousness as a hard reject.
+reasoning. This is a deliberate design choice, not an oversight — see the
+SRS's "Known Limitations" note. Their CONDITIONAL detail text still warns
+this should be treated with the same seriousness as a hard reject.
 
 Check 3 (12-element compliance) is a supplier written-confirmation flag, not
 an engineer element-by-element audit — DCCEEW already assesses RWMP

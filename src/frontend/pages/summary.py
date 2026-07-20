@@ -2,8 +2,8 @@
 frontend/pages/summary.py
 ==========================
 Readiness summary (blocking/pending/confirmed), phase-outcome recap, and
-save/export actions. No single pass/fail verdict or score — removed;
-clients only want the per-check breakdown.
+save/export actions. No single pass/fail verdict or score by design —
+just the per-check breakdown.
 """
 
 from datetime import datetime

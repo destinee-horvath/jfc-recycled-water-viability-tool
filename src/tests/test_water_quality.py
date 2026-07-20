@@ -72,8 +72,8 @@ def test_concrete_shows_all_checks_even_after_impurity_reject():
 
 
 def test_concrete_reject_on_ecoli_over_limit():
-    """E. coli added per client review feedback — same AGWR Table 3.8
-    threshold (100 cfu/100mL) as Earthworks."""
+    """E. coli — same AGWR Table 3.8 threshold (100 cfu/100mL) as
+    Earthworks."""
     inp = dict(CONCRETE_VALID, conc_ecoli=500)
     r = assess_water_quality(inp)
     assert r.state == "REJECT"
@@ -150,8 +150,8 @@ def test_earthworks_conditional_when_untested():
 
 
 def test_earthworks_reject_on_bod_over_limit():
-    """Microbiological limits added per client review feedback (AGWR Phase 1
-    2006 Table 3.8) — previously only applied to Dust Suppression."""
+    """Microbiological limits (AGWR Phase 1 2006 Table 3.8) — previously
+    only applied to Dust Suppression."""
     inp = dict(EARTHWORKS_VALID, ew_bod_mgl=999)
     r = assess_water_quality(inp)
     assert r.state == "REJECT"

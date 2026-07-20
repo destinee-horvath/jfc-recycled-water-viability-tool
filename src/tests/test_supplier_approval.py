@@ -6,9 +6,9 @@ PHASE 1 — Supplier & Dual Approval: REJECT / CONDITIONAL / PROCEED coverage.
 Hard gates (REJECT): historic operation without approval, council/authority
 "No", and the discharge-point trap — none of these is obtainable after the
 fact, so none is remediable by "confirm it later". Private scheme (s.68
-greywater/blackwater) was removed per client review — not a credible pathway
-for recycled water at roadworks scale; only council-run and water-authority
-supplier types remain, plus stormwater's own pathway. Dual approval "Not
+greywater/blackwater) is not covered — not a credible pathway for recycled
+water at roadworks scale; only council-run and water-authority supplier
+types remain, plus stormwater's own pathway. Dual approval "Not
 permitted" is CONDITIONAL, not REJECT: the user
 can vary their EPL or obtain development consent before works commence, so
 it's remediable, unlike the supplier-side pre-existing ministerial approvals.
@@ -169,9 +169,9 @@ def test_conditional_when_water_supply_authority_approval_unconfirmed():
 
 
 def test_private_scheme_removed_from_supplier_authorities():
-    """Client review: s.68 private-scheme approvals are for small-scale
-    septic systems, not a credible pathway for recycled water at roadworks
-    scale. Only council-run and water-authority schemes remain."""
+    """s.68 private-scheme approvals are for small-scale septic systems,
+    not a credible pathway for recycled water at roadworks scale. Only
+    council-run and water-authority schemes remain."""
     assert C.SUPPLIER_AUTHORITIES == ["Council-run scheme", "Water supply authority"]
     assert "Private scheme (greywater/blackwater)" not in C.SUPPLIER_APPROVAL_REFS
 

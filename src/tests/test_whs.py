@@ -136,9 +136,9 @@ def test_conditional_when_whs_checklist_incomplete():
 
 
 def test_whs_checklist_is_a_single_combined_check():
-    """Client review: relabelled to one combined 'All WHS checks confirmed?'
-    check (was 5 independent per-item checks) — any single NO triggers
-    CONDITIONAL, and the reason text enumerates all five items."""
+    """Relabelled to one combined 'All WHS checks confirmed?' check (was 5
+    independent per-item checks) — any single NO triggers CONDITIONAL, and
+    the reason text enumerates all five items."""
     r = assess_whs(dict(VALID, whs_ppe=False))
     checklist_checks = [c for c in r.checks if c.label.startswith("All WHS checks confirmed?")]
     assert len(checklist_checks) == 1

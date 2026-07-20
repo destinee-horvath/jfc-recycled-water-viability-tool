@@ -46,8 +46,8 @@ def build_xlsx(meta: dict, results: dict[str, PhaseResult], readiness: dict,
     phase (filled with that phase's PROCEED/CONDITIONAL/REJECT/NA colour)
     followed by one row per check (filled with that check's own state
     colour, so a REJECT check stands out even inside an otherwise
-    CONDITIONAL phase). No headline verdict/score — removed; clients only
-    want the blocking/pending/confirmed breakdown.
+    CONDITIONAL phase). No headline verdict/score by design — just the
+    blocking/pending/confirmed breakdown.
 
     If ``inputs`` (the raw {phase: {field: value}} dict) is supplied, a
     second "Assessment Inputs" sheet is added — see module docstring.
