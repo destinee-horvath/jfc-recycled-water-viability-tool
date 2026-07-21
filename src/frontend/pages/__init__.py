@@ -20,6 +20,7 @@ from .p6_whs import page_whs
 from .p7_financial import page_financial
 from .summary import page_summary
 from .compare import page_compare
+from .save_export import page_save_export
 
 PAGE_FUNCS = {
     "supplier_approval": page_supplier_approval,

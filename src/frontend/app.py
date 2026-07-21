@@ -16,7 +16,7 @@ from .state import init_state, current_results, reset_widget_state
 from .components import progress_bar
 from .refdata import get_reference_data, PHASE_BY_ID
 from .theme import badge
-from .pages import PAGE_FUNCS, page_setup, page_summary, page_compare
+from .pages import PAGE_FUNCS, page_setup, page_summary, page_compare, page_save_export
 
 st.set_page_config(
     page_title=C.APP_TITLE,
@@ -77,6 +77,7 @@ def sidebar():
         st.caption("Results")
         _nav_button("Summary")
         _nav_button("Compare")
+        _nav_button("Save & Export")
 
         st.divider()
         with st.expander("☰ Regulation Reference", expanded=False):
@@ -125,6 +126,8 @@ def main():
         page_summary(current_results())
     elif page == "Compare":
         page_compare()
+    elif page == "Save & Export":
+        page_save_export(current_results())
     elif current_phase_id:
         PAGE_FUNCS[current_phase_id](current_results())
 

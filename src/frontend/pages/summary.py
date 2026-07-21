@@ -56,7 +56,7 @@ def page_summary(results):
             st.divider()
 
     readiness = B.readiness_summary(results)
-    _save_export_block(results, readiness)
+    save_export_block(results, readiness)
 
 
 def _readiness_columns(checks, c1, c2, c3):
@@ -81,7 +81,7 @@ def _readiness_columns(checks, c1, c2, c3):
             st.markdown(f"- {c.label}")
 
 
-def _save_export_block(results, readiness):
+def save_export_block(results, readiness):
     st.subheader("Save & export")
     m = st.session_state.meta
     c1, c2 = st.columns(2)
