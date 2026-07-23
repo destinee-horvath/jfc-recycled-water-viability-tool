@@ -39,7 +39,8 @@ FULLY_VIABLE_INPUTS = {
         "involves_extraction_or_processing": False,
         "distance_to_waterway_m": 200,
         "sensitive_environment": "None / not sensitive",
-        "containment_documented": True,
+        "ponding_overflow_risk": False,
+        "containment_documented": False,
     },
     "soil_conditions": {
         "soil_water_sar": 13, "soil_water_ec_dsm": 3.5,

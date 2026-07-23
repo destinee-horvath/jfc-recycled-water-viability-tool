@@ -13,10 +13,16 @@ the loaders in ``@st.cache_data`` to avoid recomputing on every rerun.
 """
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Anchored to this file's own location, not the process's working directory
+# — see frontend/app.py's IMAGES_DIR for the same fix applied to the logo
+# images; SAVE_DIR had the identical cwd-dependent bug.
+BASE_DIR = Path(__file__).resolve().parent
 
 # ----------------------------------------------------------------------------
 # GLOBAL VARIABLES — COLOUR THEME
@@ -44,7 +50,7 @@ STATE_COLOURS = {
 # ----------------------------------------------------------------------------
 APP_TITLE = "Recycled Water Viability Assessment Tool"
 APP_SUBTITLE = "Viability screening for recycled water across roadworks applications (IPWEA / NSW)"
-SAVE_DIR = "saved_assessments"
+SAVE_DIR = str(BASE_DIR / "saved_assessments")
 
 DISCLAIMER = (
     "! DECISION SUPPORT ONLY. This tool provides a preliminary viability screen "
@@ -301,6 +307,42 @@ TOOLTIP_DUAL_APPROVAL = (
     "Supplier approval lets the supplier treat and supply the water. Dual "
     "approval means you separately need your own EPL or development consent "
     "to use it for this activity."
+)
+
+# ----------------------------------------------------------------------------
+# SOURCE-DOCUMENTATION LOOKUP NOTES — short, scannable pointers (shown via
+# st.caption, not a text block) to where a user without the source document
+# in hand yet can go check, for fields where a public register exists.
+# ----------------------------------------------------------------------------
+
+# Ministerial approval under LGA 1993 s.60 / WMA 2000 s.292 isn't itself
+# published as a searchable public register — the NSW Water Register covers
+# licences/approvals/dealings more broadly, and DPIE's own approvals page
+# explains the s.60/s.292 process. Neither is a direct per-scheme lookup, so
+# this is framed as "where to start", not "search here for your answer".
+MINISTERIAL_APPROVAL_LOOKUP_NOTE = (
+    "Don't have this confirmed yet? Start with the "
+    "[NSW Water Register](https://waterregister.waternsw.com.au/search/SearchWizard.jsp) "
+    "or DPIE's [water treatment/sewerage works approvals guidance]"
+    "(https://water.dpie.nsw.gov.au/our-work/local-water-utilities/approval-and-inspection-of-water-treatment-and-sewerage-works/apply-for-water-treatment-and-sewerage-works-approvals), "
+    "or confirm directly with the supplier."
+)
+
+# NSW EPA's own public POEO register — a genuine per-licence search.
+EPL_REGISTER_NOTE = (
+    "Don't have the EPL details yet? Search the "
+    "[NSW EPA public register](https://apps.epa.nsw.gov.au/prpoeoapp/) by "
+    "licensee name or location."
+)
+
+# No confirmed public RWMP register exists (as of this tool's build) — DPIE
+# is understood to be working toward publishing approval instruments, but
+# RWMP status currently is not independently searchable. Deliberately no
+# link here — see the client UI/UX flag on this item; a link should only be
+# added once a public register is confirmed to exist.
+RWMP_LOOKUP_NOTE = (
+    "No public RWMP register is available to check this against — confirm "
+    "current RWMP status directly with the supplier."
 )
 
 # ----------------------------------------------------------------------------
@@ -606,6 +648,24 @@ SOIL_SAR_EC_REF = (
 )
 SOIL_STABILITY_SLOPE = 4.3
 SOIL_STABILITY_INTERCEPT = -0.4
+
+# Plain-language "what is this?" note for the SAR/EC fields — shown in an
+# expander on the Soil & Site Conditions page so an engineer unfamiliar with
+# these two parameters isn't left guessing whether they need a separate test.
+SAR_EC_WHAT_IS_THIS = (
+    "**Sodium Adsorption Ratio (SAR)** measures the proportion of sodium to "
+    "calcium/magnesium in the water — high SAR water can cause clay soils "
+    "to disperse or slake, weakening the subgrade's structure.\n\n"
+    "**Electrical Conductivity (EC)** measures the water's salinity — it "
+    "acts alongside SAR, since higher EC partly offsets high-SAR water's "
+    "dispersion risk (this is why the check below screens the two "
+    "together, not separately).\n\n"
+    "Both are standard parameters on a water-testing laboratory's report — "
+    "request SAR and EC (in dS/m) when you submit the water sample. They "
+    "typically come back on the **same lab report as the other water-"
+    "quality parameters already collected in Water Quality (Phase 3)** — "
+    "this is not usually a separate test run or a separate sample."
+)
 
 # USSL (Richards, 1954) salinity-hazard (C-class) boundaries — fixed,
 # EC-only, shown for context. S1-S4 sodium-hazard sub-classification isn't

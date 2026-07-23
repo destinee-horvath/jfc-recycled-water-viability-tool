@@ -19,3 +19,19 @@ COLOUR_BG = C.COLOUR_BG                # background
 def badge(state: str, text: str = None) -> str:
     colour = C.STATE_COLOURS.get(state, COLOUR_NEUTRAL)
     return f'<span class="badge" style="background:{colour}">{text or state}</span>'
+
+
+def accounting_amount(value: float, favourable: bool) -> str:
+    """Accounting-style money formatting for a signed comparison figure:
+    an unfavourable amount renders in red with parentheses (e.g. ($1,234)),
+    matching the convention finance teams use so the reader never has to
+    parse a leading minus sign or mentally re-sign the number themselves.
+    ``favourable`` must be passed explicitly by the caller rather than
+    inferred from ``value``'s own sign — which direction counts as
+    "favourable" depends on what the figure represents (e.g. a positive
+    water-cost saving is favourable, but a positive transport-cost
+    *difference* is not)."""
+    magnitude = f"${abs(value):,.0f}"
+    if favourable:
+        return f'<span style="color:{COLOUR_SUCCESS};font-weight:700">{magnitude}</span>'
+    return f'<span style="color:{COLOUR_DANGER};font-weight:700">({magnitude})</span>'

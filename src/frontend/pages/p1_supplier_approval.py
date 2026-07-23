@@ -17,11 +17,13 @@ def page_supplier_approval(results):
     st.header(g["label"], help=g["desc"])
     d = gi("supplier_approval")
 
-    d["operated_without_approval"] = st.checkbox(
+    d["operated_without_approval"] = st.radio(
         "⚠ Has this scheme operated historically WITHOUT approval?",
-        value=bool(d.get("operated_without_approval")),
+        ["No", "Yes"],
+        index=1 if d.get("operated_without_approval") else 0,
+        horizontal=True,
         help="Auto-reject — no retrospective approval is possible.",
-        key="supplier_approval_operated_without_approval")
+        key="supplier_approval_operated_without_approval") == "Yes"
 
     if d["operated_without_approval"]:
         st.error("No retrospective approval possible — assessment cannot proceed.")
@@ -78,6 +80,7 @@ def page_supplier_approval(results):
                 "construct, maintain, and operate their water treatment and supply works "
                 "under the Water Management Act 2000, s.292(1)(a)",
                 "authority_approval_held")
+        st.caption(C.MINISTERIAL_APPROVAL_LOOKUP_NOTE)
 
         if d["water_source"] in ("Treated effluent", "Other"):
             d["discharge_only"] = st.checkbox(
@@ -89,6 +92,7 @@ def page_supplier_approval(results):
     # --- EPL section (informational — does not affect the pass/reject gates) -
     st.caption("Environment Protection Licence (EPL)",
                help=f"{C.EPL_SECTION_EXPLANATION} {C.TOOLTIP_EPL}")
+    st.caption(C.EPL_REGISTER_NOTE)
 
     try:
         epl_index = C.EPL_STATES.index(d.get("epl_status", C.EPL_STATES[-1]))

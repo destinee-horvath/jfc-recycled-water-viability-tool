@@ -24,7 +24,7 @@ import backend as B
 
 from ..state import gi, render_phase_actions
 from ..refdata import PHASE_BY_ID
-from ..theme import COLOUR_PRIMARY, COLOUR_SUCCESS, COLOUR_WARNING, COLOUR_NEUTRAL
+from ..theme import COLOUR_PRIMARY, COLOUR_SUCCESS, COLOUR_WARNING, COLOUR_NEUTRAL, accounting_amount
 
 def _persisted_expander(label: str, key: str):
     """st.expander bound to a session_state key so it stays open across a
@@ -407,12 +407,19 @@ def _transport_section(d):
         if new_area_type != d.get("area_type"):
             # Area type just changed — reset the speed to that type's default.
             # Once the user edits the speed field directly, it's left alone.
+            # Both `d` AND the number_input's own session_state key must be
+            # updated here, before that widget is instantiated below —
+            # passing a new `value=` alone has no effect once a widget's key
+            # already holds a value in session_state (Streamlit ignores
+            # `value` on every run after the first for a given key), which
+            # is why the area-type buttons previously appeared to do nothing.
             d["avg_speed_kmh"] = C.AREA_TYPE_SPEEDS[new_area_type]
+            st.session_state["financial_avg_speed_kmh"] = d["avg_speed_kmh"]
         d["area_type"] = new_area_type
         with c2:
             d["avg_speed_kmh"] = st.number_input(
                 "Average speed (km/h)", min_value=0.0, value=float(d["avg_speed_kmh"]),
-                key="financial_avg_speed_kmh")
+                step=1.0, key="financial_avg_speed_kmh")
 
 
 def _dust_suppression_section(d):
@@ -543,6 +550,17 @@ def _input_review(d, total_width_m):
             f"{body}</table>", unsafe_allow_html=True)
 
 
+def _net_position_line(net: float, scenario_label: str) -> str:
+    """One-line plain-language readout of a signed net-position figure —
+    lets the reader skip mentally subtracting savings from the transport
+    cost difference themselves."""
+    if net > 0:
+        return f"Recycled water **saves ${net:,.0f}** compared to potable under {scenario_label} pricing."
+    if net < 0:
+        return f"Recycled water **costs ${abs(net):,.0f} more** than potable under {scenario_label} pricing."
+    return f"Recycled water costs the same as potable under {scenario_label} pricing."
+
+
 def _cost_summary_section(fa: dict, d: dict):
     st.divider()
     st.subheader("Cost summary & break-even analysis")
@@ -550,6 +568,10 @@ def _cost_summary_section(fa: dict, d: dict):
     if fa["combined_total_volume_kL"] <= 0:
         st.caption("Enter pavement geometry and moisture content to compute the comparison.")
         return
+
+    net_normal = fa["savings_normal"] - fa["total_cost_difference"]
+    net_drought = fa["savings_drought"] - fa["total_cost_difference"]
+    st.markdown(_net_position_line(net_normal, "normal"))
 
     st.markdown("**Total volume of water required** (always summed — pavement, "
                 "dust suppression, and concrete kerb+elements all combine)")
@@ -565,10 +587,13 @@ def _cost_summary_section(fa: dict, d: dict):
     c2.metric("Recycled", f"${fa['recycled_water_cost']:,.0f}")
     c3.metric("Potable (drought)", f"${fa['potable_water_cost_drought']:,.0f}")
 
-    st.markdown("**Water cost savings**")
+    st.markdown("**Water cost savings** (potable minus recycled — parentheses/red "
+                "= recycled water costs more)")
     c1, c2 = st.columns(2)
-    c1.metric("Savings (normal)", f"${fa['savings_normal']:,.0f}")
-    c2.metric("Savings (drought)", f"${fa['savings_drought']:,.0f}")
+    c1.markdown(f"Savings (normal): {accounting_amount(fa['savings_normal'], favourable=fa['savings_normal'] >= 0)}",
+                unsafe_allow_html=True)
+    c2.markdown(f"Savings (drought): {accounting_amount(fa['savings_drought'], favourable=fa['savings_drought'] >= 0)}",
+                unsafe_allow_html=True)
 
     st.markdown("**Transport costs comparison** (per day; "
                 f"{fa['delivery_days_trucked']:,.0f} trucked days "
@@ -577,14 +602,22 @@ def _cost_summary_section(fa: dict, d: dict):
     c1, c2, c3 = st.columns(3)
     c1.metric("Potable transport / day", f"${fa['potable_transport_cost_per_day']:,.0f}")
     c2.metric("Recycled transport / day", f"${fa['recycled_transport_cost_per_day']:,.0f}")
-    c3.metric("Total cost difference", f"${fa['total_cost_difference']:,.0f}")
+    with c3:
+        st.caption("Total cost difference (parentheses/red = recycled costs more)")
+        st.markdown(accounting_amount(fa['total_cost_difference'],
+                                       favourable=fa['total_cost_difference'] <= 0),
+                    unsafe_allow_html=True)
 
-    st.markdown("**Profit / Loss** (water savings vs. transport cost difference)")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Profit (normal)", f"${fa['profit_normal']:,.0f}")
-    c2.metric("Loss (normal)", f"${fa['loss_normal']:,.0f}")
-    c3.metric("Profit (drought)", f"${fa['profit_drought']:,.0f}")
-    c4.metric("Loss (drought)", f"${fa['loss_drought']:,.0f}")
+    st.markdown("**Net position** (water savings minus transport cost difference)")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.caption(_net_position_line(net_normal, "normal"))
+        st.markdown(f"Normal: {accounting_amount(net_normal, favourable=net_normal >= 0)}",
+                    unsafe_allow_html=True)
+    with c2:
+        st.caption(_net_position_line(net_drought, "drought"))
+        st.markdown(f"Drought: {accounting_amount(net_drought, favourable=net_drought >= 0)}",
+                    unsafe_allow_html=True)
 
     if fa["verdict"] == "PROCEED":
         verdict_colour, verdict_text = COLOUR_SUCCESS, "PROCEED — recycled water is cost favourable."

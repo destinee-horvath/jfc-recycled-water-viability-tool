@@ -195,6 +195,8 @@ def page_soil_conditions(results):
              "for the risk of soil-structure degradation — "
              "dispersion/slaking from a high Sodium Adsorption Ratio (SAR) "
              "at low Electrical Conductivity (EC).")
+    with st.expander("What is this?"):
+        st.markdown(C.SAR_EC_WHAT_IS_THIS)
 
     measured_table([
         ("soil_water_sar", "Sodium Adsorption Ratio (SAR) of recycled water source",

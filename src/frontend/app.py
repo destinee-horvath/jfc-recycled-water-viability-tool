@@ -6,6 +6,8 @@ sidebar, and page routing. NO decision logic lives here — see backend/ for
 the phase rules.
 """
 
+from pathlib import Path
+
 import streamlit as st
 
 import config as C
@@ -17,6 +19,12 @@ from .components import progress_bar
 from .refdata import get_reference_data, PHASE_BY_ID
 from .theme import badge
 from .pages import PAGE_FUNCS, page_setup, page_summary, page_compare, page_save_export
+
+# Anchored to this file's own location, not the process's working directory
+# — Streamlit Cloud does not guarantee the working directory is src/, so a
+# plain "frontend/images/..." string resolves incorrectly there even though
+# it happens to work locally when the app is launched from inside src/.
+IMAGES_DIR = Path(__file__).parent / "images"
 
 st.set_page_config(
     page_title=C.APP_TITLE,
@@ -56,8 +64,8 @@ def sidebar():
     REF = get_reference_data()
     with st.sidebar:
         logo1, logo2 = st.columns(2)
-        logo1.image("frontend/images/IPWEA-logo.png", width="stretch")
-        logo2.image("frontend/images/JFC-logo.jpg", width="stretch")
+        logo1.image(str(IMAGES_DIR / "IPWEA-logo.png"), width="stretch")
+        logo2.image(str(IMAGES_DIR / "JFC-logo.jpg"), width="stretch")
         st.divider()
 
         st.markdown(f"### ◧ {C.APP_TITLE}")

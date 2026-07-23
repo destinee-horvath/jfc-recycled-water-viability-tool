@@ -41,6 +41,7 @@ def page_site_runoff(results):
             key="site_runoff_project_tonnes")
 
     st.subheader("EPL")
+    st.caption(C.EPL_REGISTER_NOTE)
     d["epl_in_place"] = st.checkbox("EPL in place", value=bool(d.get("epl_in_place")),
                                     key="site_runoff_epl_in_place")
     d["epl_covers_recycled"] = st.checkbox(
@@ -68,12 +69,23 @@ def page_site_runoff(results):
             d.get("sensitive_environment", C.SENSITIVE_ENVIRONMENTS[0])),
         key="site_runoff_sensitive_environment")
 
-    d["containment_documented"] = st.checkbox(
-        "Is there a risk of ponding or site overflow, and are containment & "
-        "emergency response procedures documented?",
-        value=bool(d.get("containment_documented")),
+    d["ponding_overflow_risk"] = st.radio(
+        "Is there a risk of ponding or site overflow at this site?",
+        ["No", "Yes"],
+        index=1 if d.get("ponding_overflow_risk") else 0,
+        horizontal=True,
         help="Regulators check this at approval. Fines apply for non-compliant discharge (s.123).",
-        key="site_runoff_containment_documented")
+        key="site_runoff_ponding_overflow_risk") == "Yes"
+
+    if d["ponding_overflow_risk"]:
+        d["containment_documented"] = st.radio(
+            "Are containment and emergency-response procedures documented?",
+            ["No", "Yes"],
+            index=1 if d.get("containment_documented") else 0,
+            horizontal=True,
+            key="site_runoff_containment_documented") == "Yes"
+    else:
+        d["containment_documented"] = False
 
     render_phase_result(current_results()["site_runoff"])
     render_phase_actions("site_runoff")

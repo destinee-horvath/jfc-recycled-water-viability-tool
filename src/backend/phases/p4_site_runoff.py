@@ -128,17 +128,29 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
             ))
 
     # --- Ponding / overflow risk & containment / emergency response ----------
-    if inp.get("containment_documented"):
+    # Two sequential questions (FR4.7): risk first, containment only if a
+    # risk was actually identified — a site with no identified risk PROCEEDs
+    # immediately rather than being asked about containment for a risk that
+    # doesn't exist.
+    ponding_label = ("Is there a risk of ponding or site overflow, and if so, "
+                      "are containment & emergency response procedures documented?")
+    if not inp.get("ponding_overflow_risk"):
         g.checks.append(CheckResult(
-            "Ponding / overflow: containment & emergency response documented",
-            "PROCEED", C.POEO_REFS["s120"], "Procedures documented.",
+            ponding_label, "PROCEED", C.POEO_REFS["s120"],
+            "No identified risk of ponding or site overflow at this site.",
+        ))
+    elif inp.get("containment_documented"):
+        g.checks.append(CheckResult(
+            ponding_label, "PROCEED", C.POEO_REFS["s120"],
+            "Ponding/overflow risk identified — containment & emergency "
+            "response procedures documented.",
         ))
     else:
         g.checks.append(CheckResult(
-            "Ponding / overflow: containment & emergency response documented",
-            "CONDITIONAL", C.POEO_REFS["s120"],
-            "Document the overflow assessment and containment procedures — "
-            "regulators will check this at approval.",
+            ponding_label, "CONDITIONAL", C.POEO_REFS["s120"],
+            "Ponding/overflow risk identified — document the containment "
+            "and emergency response procedures before works begin. "
+            "Regulators will check this at approval.",
         ))
 
     g.rollup()

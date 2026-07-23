@@ -19,6 +19,7 @@ def page_rwmp(results):
     st.header(g["label"], help=g["desc"])
     d = gi("rwmp")
 
+    st.caption(C.RWMP_LOOKUP_NOTE)
     d["has_approved_rwmp"] = st.checkbox(
         "Supplier holds an approved RWMP for this scheme",
         value=bool(d.get("has_approved_rwmp")), key="rwmp_has_approved_rwmp")

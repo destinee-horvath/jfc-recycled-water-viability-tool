@@ -13,7 +13,8 @@ VALID = {
     "distance_to_waterway_m": 200,
     "slope_toward_waterway": False,
     "sensitive_environment": "None / not sensitive",
-    "containment_documented": True,
+    "ponding_overflow_risk": False,
+    "containment_documented": False,
 }
 
 
@@ -36,9 +37,23 @@ def test_conditional_when_near_waterway():
 
 
 def test_conditional_when_containment_undocumented():
-    inp = dict(VALID, containment_documented=False)
+    inp = dict(VALID, ponding_overflow_risk=True, containment_documented=False)
     r = assess_site_runoff(inp)
     assert r.state == "CONDITIONAL"
+
+
+def test_proceed_when_ponding_risk_and_containment_documented():
+    inp = dict(VALID, ponding_overflow_risk=True, containment_documented=True)
+    r = assess_site_runoff(inp)
+    assert r.state == "PROCEED"
+
+
+def test_proceed_when_no_ponding_risk_regardless_of_containment():
+    """No identified risk PROCEEDs directly — containment is never even
+    asked about (FR4.7's skip-the-second-question behaviour)."""
+    inp = dict(VALID, ponding_overflow_risk=False, containment_documented=False)
+    r = assess_site_runoff(inp)
+    assert r.state == "PROCEED"
 
 
 def test_never_rejects_even_in_worst_case():
@@ -47,7 +62,7 @@ def test_never_rejects_even_in_worst_case():
         in_regulated_area=True, epl_in_place=True, epl_covers_recycled=False,
         pirmp_in_place=False, distance_to_waterway_m=1,
         slope_toward_waterway=True, sensitive_environment="Marine park",
-        containment_documented=False,
+        ponding_overflow_risk=True, containment_documented=False,
     )
     r = assess_site_runoff(inp)
     assert r.state != "REJECT"
