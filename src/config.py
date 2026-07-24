@@ -480,7 +480,7 @@ SOIL_TABLE_REF = "Carter & Bentley (1991), Table 5-17; FHWA NHI-06-088"
 SOIL_TABLE_CITATION = (
     "Source: Carter & Bentley (1991), Table 5-17.  \n"
     "Reference: FHWA NHI-06-088, Table 5-17  \n"
-    "https://www.fhwa.dot.gov/engineering/geotech/pubs/05037/05a.cfm"
+    "https://www.fhwa.dot.gov/engineering/geotech/pubs/nhi06088.pdf"
 )
 
 # USCS soil classification reference table — dry unit weight and optimum
@@ -911,6 +911,9 @@ SYDNEY_WATER_TECH_SPEC_URL = (
     "https://www.sydneywater.com.au/plumbing-building-developing/"
     "provider-information/standards-specifications.html"
 )
+FHWA_NHI_06_088_URL = "https://www.fhwa.dot.gov/engineering/geotech/pubs/nhi06088.pdf"
+USDA_HANDBOOK_60_URL = "https://www.ars.usda.gov/ARSUserFiles/20360500/hb60_pdf/hb60intro.pdf"
+EPA_ACT_1979_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1979-203"
 
 
 def _cited(text: str, *links: tuple[str, str]) -> str:
@@ -935,7 +938,8 @@ def all_regulation_refs():
                  _cited(SUPPLIER_APPROVAL_REFS["Water supply authority"],
                         ("Water Management Act 2000", WMA2000_URL))))
     refs.append((f"{dn['supplier_approval']} — dual approval (user side)",
-                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL))))
+                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL),
+                        ("EP&A Act 1979", EPA_ACT_1979_URL))))
     refs.append((f"{dn['supplier_approval']} — stormwater approval pathway",
                  _cited(STORMWATER_APPROVAL_REF,
                         ("Local Government Act 1993", LGA1993_URL),
@@ -953,10 +957,12 @@ def all_regulation_refs():
                  _cited(RWMS_SOURCE, ("NSW Guidelines for Recycled Water Management Systems", NSW_OFFICE_OF_WATER_2015_URL))))
     for v in POEO_REFS.values():
         refs.append((f"{dn['site_runoff']} — POEO Act 1997", _cited(v, ("POEO Act 1997", POEO1997_URL))))
-    refs.append((f"{dn['soil_conditions']} — soil & site", SOIL_TABLE_REF))
+    refs.append((f"{dn['soil_conditions']} — soil & site",
+                 _cited(SOIL_TABLE_REF, ("FHWA NHI-06-088", FHWA_NHI_06_088_URL))))
     refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability",
                  _cited(SOIL_SAR_EC_REF, ("ANZG (2018)", ANZG2018_URL))))
-    refs.append((f"{dn['soil_conditions']} — USSL salinity classification", SOIL_USSL_REF))
+    refs.append((f"{dn['soil_conditions']} — USSL salinity classification",
+                 _cited(SOIL_USSL_REF, ("USDA Agriculture Handbook No. 60", USDA_HANDBOOK_60_URL))))
     refs.append((f"{dn['whs']} — WHS",
                  _cited(WHS_REF, ("WHS Act 2011", WHS2011_URL), ("WHS Regulation 2017", WHSREG2017_URL))))
     refs.append((f"{dn['whs']} — WHS: buffer zone",
@@ -980,7 +986,8 @@ def supplier_approval_regulation_refs():
                  _cited(SUPPLIER_APPROVAL_REFS["Water supply authority"],
                         ("Water Management Act 2000", WMA2000_URL))))
     refs.append((f"{dn['supplier_approval']} — dual approval (user side)",
-                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL))))
+                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL),
+                        ("EP&A Act 1979", EPA_ACT_1979_URL))))
     refs.append((f"{dn['supplier_approval']} — stormwater approval pathway",
                  _cited(STORMWATER_APPROVAL_REF,
                         ("Local Government Act 1993", LGA1993_URL),
@@ -1024,10 +1031,12 @@ def soil_conditions_regulation_refs():
     """Flat list of (topic, citation) for Phase 5."""
     dn = PHASE_DISPLAY_NAMES
     refs = []
-    refs.append((f"{dn['soil_conditions']} — soil & site", SOIL_TABLE_REF))
+    refs.append((f"{dn['soil_conditions']} — soil & site",
+                 _cited(SOIL_TABLE_REF, ("FHWA NHI-06-088", FHWA_NHI_06_088_URL))))
     refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability",
                  _cited(SOIL_SAR_EC_REF, ("ANZG (2018)", ANZG2018_URL))))
-    refs.append((f"{dn['soil_conditions']} — USSL salinity classification", SOIL_USSL_REF))
+    refs.append((f"{dn['soil_conditions']} — USSL salinity classification",
+                 _cited(SOIL_USSL_REF, ("USDA Agriculture Handbook No. 60", USDA_HANDBOOK_60_URL))))
     return refs
 
 

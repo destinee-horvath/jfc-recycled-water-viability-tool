@@ -16,6 +16,8 @@ def page_setup():
     st.header("Assessment setup")
 
     st.info("Before you start, it helps to have the following ready.")
+    st.info("Not everything below is required to get started — every phase can be filled "
+               "in, left blank, or revisited in any order at any time.")
     with st.expander("What you'll need", expanded=True):
         for item in C.TOOL_PREREQUISITES:
             st.markdown(f"- {item}")

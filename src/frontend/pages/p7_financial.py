@@ -561,6 +561,109 @@ def _net_position_line(net: float, scenario_label: str) -> str:
     return f"Recycled water costs the same as potable under {scenario_label} pricing."
 
 
+def _water_savings_line(savings: float, scenario_label: str) -> str:
+    """Same plain-language pattern as _net_position_line(), for the water-
+    cost-only savings figure (transport isn't in this number — see Net
+    result below for the combined figure). ``savings`` is always
+    potable_cost - recycled_cost; the sign alone already tells us which
+    direction is cheaper, so there's no need for a second "savings if
+    potable were chosen instead" figure — that would just be this same
+    number with the sign flipped, not a new fact."""
+    if savings > 0:
+        return f"Recycled water **saves ${savings:,.0f}** on water costs alone under {scenario_label} pricing."
+    if savings < 0:
+        return f"Recycled water **costs ${abs(savings):,.0f} more** on water costs alone under {scenario_label} pricing."
+    return f"Recycled and potable water cost the same under {scenario_label} pricing."
+
+
+# ---------------------------------------------------------------------------
+# "?" tooltip formula breakdowns for the Cost summary metrics below — each
+# mirrors backend.phases.p7_financial's own formula exactly (same terms,
+# same order), substituting this run's real input values, so a client can
+# see precisely how a number was reached without leaving the page.
+# ---------------------------------------------------------------------------
+
+def _pavement_formula_help(fa: dict, d: dict) -> str:
+    lines = [
+        f"Width = ({d['num_lanes']:g} lanes × {d['lane_width_m']:g}m) + "
+        f"({d['num_shoulders']:g} shoulders × {d['shoulder_width_m']:g}m) "
+        f"= {fa['total_width_m']:,.1f}m"
+    ]
+    for name, label in _LAYER_LABELS.items():
+        omc = d[f"layer_{name}_omc_pct"]
+        mc = d[f"layer_{name}_mc_pct"]
+        thickness = d[f"layer_{name}_thickness_m"]
+        density = d[f"layer_{name}_density_kg_m3"]
+        vol = fa["layer_volumes_kL"][name]
+        status = "" if fa["layer_included"][name] else " — excluded, not in total"
+        lines.append(
+            f"{label}: ({omc:g}% − {mc:g}%) ÷ 100 × {thickness:g}m × "
+            f"{fa['total_width_m']:,.1f}m × {d['road_length_m']:,.0f}m × "
+            f"{density:,.0f} kg/m³ ÷ 1000 = {vol:,.1f} kL{status}"
+        )
+    return "\n\n".join(lines)
+
+
+def _dust_suppression_formula_help(fa: dict, d: dict) -> str:
+    return (
+        f"{d['surface_area_m2']:,.0f} m² × {d['water_per_m2_L']:g} L/m² × "
+        f"{d['applications_per_day']:g} applications/day ÷ 1000 = "
+        f"{fa['total_water_per_day_kL']:,.1f} kL/day at full coverage\n\n"
+        f"× {d['effective_area_pct']:g}% effective area = "
+        f"{fa['effective_water_kL']:,.1f} kL/day actually treated\n\n"
+        f"× {d['project_duration_days']:g} days = {fa['total_dust_suppression_kL']:,.1f} kL total"
+    )
+
+
+def _concrete_formula_help(fa: dict, d: dict) -> str:
+    water_fraction = C.CONCRETE_WATER_CEMENT_RATIO_TABLE.get(d["water_cement_ratio"], 0)
+    return (
+        f"Kerb: {d['kerb_type']} ({C.CONCRETE_KERB_VOLUME_PER_M.get(d['kerb_type'], 0):g} m³/m) "
+        f"× {d['road_length_m']:,.0f}m road = {fa['kerb_concrete_volume_m3']:,.1f} m³\n\n"
+        f"+ {d['additional_concrete_volume_m3']:,.1f} m³ additional elements\n\n"
+        f"× {water_fraction:g} water fraction (water:cement ratio {d['water_cement_ratio']:g}) "
+        f"= {fa['concrete_water_kL']:,.1f} kL"
+    )
+
+
+def _combined_total_help(fa: dict) -> str:
+    return (
+        f"{fa['total_pavement_volume_kL']:,.1f} kL pavement + "
+        f"{fa['total_dust_suppression_kL']:,.1f} kL dust suppression + "
+        f"{fa['concrete_water_kL']:,.1f} kL concrete "
+        f"= {fa['combined_total_volume_kL']:,.1f} kL"
+    )
+
+
+def _water_cost_help(fa: dict, rate: float, cost_value: float) -> str:
+    return (
+        f"{fa['combined_total_volume_kL']:,.1f} kL × ${rate:,.2f}/kL "
+        f"= ${fa['combined_total_volume_kL'] * rate:,.2f}, rounded up to "
+        f"${cost_value:,.0f}"
+    )
+
+
+def _transport_formula_help(d: dict, distance_km: float, cost_value: float, source_label: str) -> str:
+    num_trucks, trips, speed = d["num_trucks"], d["trips_per_truck"], d["avg_speed_kmh"]
+    hours_onsite, hire_rate = d["hours_onsite"], d["hire_rate_per_hr"]
+    fuel_eff, diesel = d["fuel_efficiency"], d["diesel_price"]
+    travel_hours_per_truck = (distance_km / speed) * 2 * trips if speed > 0 else 0.0
+    total_travel_hours = travel_hours_per_truck * num_trucks
+    total_hours_onsite = hours_onsite * num_trucks
+    total_hours = total_travel_hours + total_hours_onsite
+    fuel_costs = ((total_travel_hours * 50) / 100) * fuel_eff * diesel
+    return (
+        f"Travel: ({distance_km:g}km ÷ {speed:g}km/h) × 2 × {trips:g} trips × "
+        f"{num_trucks:g} trucks = {total_travel_hours:,.1f} hrs\n\n"
+        f"On-site: {hours_onsite:g}h × {num_trucks:g} trucks = {total_hours_onsite:,.1f} hrs\n\n"
+        f"Hire: {total_hours:,.1f} total hrs × ${hire_rate:,.0f}/hr = ${total_hours * hire_rate:,.0f}\n\n"
+        f"Fuel: {total_travel_hours:,.1f} travel hrs, at a fixed 50km/h assumption "
+        f"regardless of the {speed:g}km/h selected above (see Known Limitations) "
+        f"÷ 100 × {fuel_eff:g} L/100km × ${diesel:,.2f}/L = ${fuel_costs:,.0f}\n\n"
+        f"Total ({source_label}): ${cost_value:,.0f}/day"
+    )
+
+
 def _cost_summary_section(fa: dict, d: dict):
     st.divider()
     st.subheader("Cost summary & break-even analysis")
@@ -573,49 +676,80 @@ def _cost_summary_section(fa: dict, d: dict):
     net_drought = fa["savings_drought"] - fa["total_cost_difference"]
     st.markdown(_net_position_line(net_normal, "normal"))
 
-    st.markdown("**Total volume of water required** (always summed — pavement, "
-                "dust suppression, and concrete kerb+elements all combine)")
+    st.markdown("#### Water needed",
+                help="Pavement, dust suppression, and concrete kerb + elements "
+                     "combine into this total.")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Pavement", f"{fa['total_pavement_volume_kL']:,.1f} kL")
-    c2.metric("Dust suppression", f"{fa['total_dust_suppression_kL']:,.1f} kL")
-    c3.metric("Concrete kerb + elements", f"{fa['concrete_water_kL']:,.1f} kL")
-    c4.metric("Combined total", f"{fa['combined_total_volume_kL']:,.1f} kL")
+    c1.metric("Pavement", f"{fa['total_pavement_volume_kL']:,.1f} kL",
+              help=_pavement_formula_help(fa, d))
+    c2.metric("Dust suppression", f"{fa['total_dust_suppression_kL']:,.1f} kL",
+              help=_dust_suppression_formula_help(fa, d))
+    c3.metric("Concrete kerb + elements", f"{fa['concrete_water_kL']:,.1f} kL",
+              help=_concrete_formula_help(fa, d))
+    c4.metric("Combined total", f"{fa['combined_total_volume_kL']:,.1f} kL",
+              help=_combined_total_help(fa))
 
-    st.markdown("**Water costs comparison** (rounded up to whole dollars)")
+    st.markdown("#### Water cost", help="Rounded up to the nearest dollar.")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Potable (normal)", f"${fa['potable_water_cost_normal']:,.0f}")
-    c2.metric("Recycled", f"${fa['recycled_water_cost']:,.0f}")
-    c3.metric("Potable (drought)", f"${fa['potable_water_cost_drought']:,.0f}")
+    c1.metric("Potable (normal)", f"${fa['potable_water_cost_normal']:,.0f}",
+              help=_water_cost_help(fa, fa["potable_cost_normal"], fa["potable_water_cost_normal"]))
+    c2.metric("Recycled", f"${fa['recycled_water_cost']:,.0f}",
+              help=_water_cost_help(fa, fa["recycled_cost_normal"], fa["recycled_water_cost"]))
+    c3.metric("Potable (drought)", f"${fa['potable_water_cost_drought']:,.0f}",
+              help=_water_cost_help(fa, fa["potable_cost_drought"], fa["potable_water_cost_drought"]))
 
-    st.markdown("**Water cost savings** (potable minus recycled — parentheses/red "
-                "= recycled water costs more)")
+    st.markdown("#### Savings", help="Water cost only — transport is compared separately below.")
     c1, c2 = st.columns(2)
-    c1.markdown(f"Savings (normal): {accounting_amount(fa['savings_normal'], favourable=fa['savings_normal'] >= 0)}",
-                unsafe_allow_html=True)
-    c2.markdown(f"Savings (drought): {accounting_amount(fa['savings_drought'], favourable=fa['savings_drought'] >= 0)}",
-                unsafe_allow_html=True)
+    with c1:
+        st.caption(_water_savings_line(fa['savings_normal'], "normal"),
+                   help=f"${fa['potable_water_cost_normal']:,.0f} potable − "
+                        f"${fa['recycled_water_cost']:,.0f} recycled = "
+                        f"${fa['savings_normal']:,.0f}")
+        st.markdown(accounting_amount(fa['savings_normal'], favourable=fa['savings_normal'] >= 0),
+                    unsafe_allow_html=True)
+    with c2:
+        st.caption(_water_savings_line(fa['savings_drought'], "drought"),
+                   help=f"${fa['potable_water_cost_drought']:,.0f} potable − "
+                        f"${fa['recycled_water_cost']:,.0f} recycled = "
+                        f"${fa['savings_drought']:,.0f}")
+        st.markdown(accounting_amount(fa['savings_drought'], favourable=fa['savings_drought'] >= 0),
+                    unsafe_allow_html=True)
 
-    st.markdown("**Transport costs comparison** (per day; "
-                f"{fa['delivery_days_trucked']:,.0f} trucked days "
-                f"[pavement+concrete] + {fa['dust_suppression_days']:,.0f} "
-                "dust-suppression days)")
+    st.markdown("#### Transport cost",
+                help=f"Per day, over {fa['delivery_days_trucked']:,.0f} trucked "
+                     f"days (pavement + concrete) plus "
+                     f"{fa['dust_suppression_days']:,.0f} dust-suppression days.")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Potable transport / day", f"${fa['potable_transport_cost_per_day']:,.0f}")
-    c2.metric("Recycled transport / day", f"${fa['recycled_transport_cost_per_day']:,.0f}")
+    c1.metric("Potable / day", f"${fa['potable_transport_cost_per_day']:,.0f}",
+              help=_transport_formula_help(d, d["potable_distance_km"],
+                                            fa["potable_transport_cost_per_day"], "potable"))
+    c2.metric("Recycled / day", f"${fa['recycled_transport_cost_per_day']:,.0f}",
+              help=_transport_formula_help(d, d["recycled_distance_km"],
+                                            fa["recycled_transport_cost_per_day"], "recycled"))
     with c3:
-        st.caption("Total cost difference (parentheses/red = recycled costs more)")
+        st.caption("Total difference",
+                   help=f"(${fa['recycled_transport_cost_per_day']:,.0f} recycled − "
+                        f"${fa['potable_transport_cost_per_day']:,.0f} potable) × "
+                        f"{fa['total_delivery_days']:,.1f} days = "
+                        f"${fa['total_cost_difference']:,.0f}")
         st.markdown(accounting_amount(fa['total_cost_difference'],
                                        favourable=fa['total_cost_difference'] <= 0),
                     unsafe_allow_html=True)
 
-    st.markdown("**Net position** (water savings minus transport cost difference)")
+    st.markdown("#### Net result", help="Water savings minus the transport cost difference.")
     c1, c2 = st.columns(2)
     with c1:
-        st.caption(_net_position_line(net_normal, "normal"))
+        st.caption(_net_position_line(net_normal, "normal"),
+                   help=f"${fa['savings_normal']:,.0f} water savings − "
+                        f"${fa['total_cost_difference']:,.0f} transport difference = "
+                        f"${net_normal:,.0f}")
         st.markdown(f"Normal: {accounting_amount(net_normal, favourable=net_normal >= 0)}",
                     unsafe_allow_html=True)
     with c2:
-        st.caption(_net_position_line(net_drought, "drought"))
+        st.caption(_net_position_line(net_drought, "drought"),
+                   help=f"${fa['savings_drought']:,.0f} water savings − "
+                        f"${fa['total_cost_difference']:,.0f} transport difference = "
+                        f"${net_drought:,.0f}")
         st.markdown(f"Drought: {accounting_amount(net_drought, favourable=net_drought >= 0)}",
                     unsafe_allow_html=True)
 

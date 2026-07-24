@@ -49,14 +49,14 @@ def test_selecting_each_area_type_updates_the_speed_field():
 
 def test_selecting_each_area_type_changes_the_transport_cost_metric():
     """The bug wasn't just cosmetic — a stuck avg_speed_kmh silently
-    mispriced the displayed transport cost too. Confirm the "Recycled
-    transport / day" metric actually differs across area types, not just
-    the underlying input dict."""
+    mispriced the displayed transport cost too. Confirm the "Recycled /
+    day" metric actually differs across area types, not just the
+    underlying input dict."""
     at = _financial_app()
     seen_costs = {}
     for area_type in C.AREA_TYPE_SPEEDS:
         _select_area_type(at, area_type)
-        seen_costs[area_type] = _metric_value(at, "Recycled transport / day")
+        seen_costs[area_type] = _metric_value(at, "Recycled / day")
 
     assert len(set(seen_costs.values())) == len(seen_costs), (
         f"Expected a distinct transport cost per area type, got {seen_costs}")
