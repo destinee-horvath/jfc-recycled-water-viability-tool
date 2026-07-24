@@ -1,0 +1,61 @@
+phase,field,value
+,assessment_name,Sample
+,assessed_by,Ben
+,saved_at,2026-07-24T00:00:00
+supplier_approval,water_source,Treated effluent
+supplier_approval,supplier_authority,Council-run scheme
+supplier_approval,council_approval_held,Yes
+supplier_approval,user_approval_state,Unconfirmed
+supplier_approval,operated_without_approval,False
+supplier_approval,discharge_only,False
+supplier_approval,epl_status,Unconfirmed
+rwmp,has_approved_rwmp,False
+rwmp,lists_roadworks_enduse,True
+rwmp,rwmp_12_elements_confirmed,True
+rwmp,rwmp_current,True
+water_quality,application_type,Earthworks (Compaction)
+water_quality,ew_sugar,50.0
+water_quality,ew_oil,20.0
+water_quality,ew_ph,6.0
+water_quality,ew_tds,1000.0
+water_quality,ew_chloride,100.0
+water_quality,ew_sulphate,100.0
+water_quality,ew_alkali,500.0
+water_quality,ew_tss,5000.0
+water_quality,ew_bod_mgl,10.0
+water_quality,ew_ss_mgl,10.0
+water_quality,ew_ecoli,50.0
+water_quality,water_class,Unclassified
+site_runoff,involves_extraction_or_batching,False
+site_runoff,distance_to_waterway_m,200
+site_runoff,sensitive_environment,None / not sensitive
+site_runoff,containment_documented,True
+soil_conditions,soil_water_sar,22.0
+soil_conditions,soil_water_ec_dsm,3.0
+soil_conditions,subgrade_active,True
+soil_conditions,subbase_active,True
+soil_conditions,base_active,True
+soil_conditions,subgrade_category,Gravel/Sand mixtures
+soil_conditions,subgrade_uscs_class,GW
+soil_conditions,subgrade_omc_pct,9.5
+soil_conditions,subgrade_density_kN_m3,20.35
+soil_conditions,subgrade_thickness_m,0.3
+soil_conditions,subgrade_mc_pct,
+soil_conditions,subbase_category,Gravel/Sand mixtures
+soil_conditions,subbase_uscs_class,GW
+soil_conditions,subbase_omc_pct,9.5
+soil_conditions,subbase_density_kN_m3,20.35
+soil_conditions,subbase_thickness_m,0.2
+soil_conditions,subbase_mc_pct,
+soil_conditions,base_omc_pct,11.0
+soil_conditions,base_thickness_m,0.2
+soil_conditions,base_mc_pct,
+soil_conditions,base_density_kN_m3,
+whs,application_method,Direct application (low contact)
+whs,contact_risk,None expected
+whs,within_buffer_distance,False
+whs,whs_notified_class,True
+whs,whs_health_risks,True
+whs,whs_ppe,True
+whs,whs_swms,True
+whs,whs_signage,True
