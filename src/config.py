@@ -881,28 +881,89 @@ NSW_RECYCLED_WATER_ROADMAP_URL = (
     "https://www.water.dcceew.nsw.gov.au/our-work/plans-and-strategies/recycled-water-roadmap"
 )
 
+# ----------------------------------------------------------------------------
+# REGULATION REFERENCE LINKS — source URLs for the citations shown in the
+# "☰ Regulation Reference" panel only (frontend.components.render_phase_result
+# and frontend.app's sidebar). Deliberately NOT merged into the plain-text
+# constants above (SUPPLIER_APPROVAL_REFS, POEO_REFS, WHS_REF, etc.) — those
+# are reused verbatim in the inline phase-outcome cards, the PDF export, and
+# the Excel export, none of which render markdown/HTML links, so embedding a
+# link in them would show up as literal "[text](url)" there.
+#
+# NSW legislation links point to the NSW Parliamentary Counsel's Office site
+# (legislation.nsw.gov.au), which always redirects to the *current in-force
+# version* — no need to update these later as an Act is amended. Verified via
+# web search 2026-07-24.
+# ----------------------------------------------------------------------------
+LGA1993_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1993-030"
+WMA2000_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-2000-092"
+POEO1997_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1997-156"
+WHS2011_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-2011-010"
+WHSREG2017_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/sl-2017-0404"
+AGWR2006_URL = "https://www.waterquality.gov.au/sites/default/files/documents/water-recycling-guidelines-full-21.pdf"
+NSW_OFFICE_OF_WATER_2015_URL = (
+    "https://www.water.dcceew.nsw.gov.au/sites/default/files/2025-08/"
+    "Section-60-NSW-Guildeines-for-Recycled-Water-Management-Systems.pdf"
+)
+ANZG2018_URL = "https://www.waterquality.gov.au/anz-guidelines"
+AS1379_URL = "https://store.standards.org.au/search?q=AS+1379"
+SYDNEY_WATER_TECH_SPEC_URL = (
+    "https://www.sydneywater.com.au/plumbing-building-developing/"
+    "provider-information/standards-specifications.html"
+)
+
+
+def _cited(text: str, *links: tuple[str, str]) -> str:
+    """Append '  \\nSource: [Label](url) · [Label2](url2)' to a citation
+    string, for the Regulation Reference panel's own markdown rendering
+    only. No-op (returns text unchanged) when no source URL is confirmed
+    for that citation yet."""
+    if not links:
+        return text
+    joined = " · ".join(f"[{label}]({url})" for label, url in links)
+    return f"{text}  \nSource: {joined}"
+
 
 def all_regulation_refs():
     """Flat list of (topic, citation) for the Regulation Reference panel."""
     dn = PHASE_DISPLAY_NAMES
     refs = []
-    for k, v in SUPPLIER_APPROVAL_REFS.items():
-        refs.append((f"{dn['supplier_approval']} — supplier: {k}", v))
-    refs.append((f"{dn['supplier_approval']} — dual approval (user side)", DUAL_APPROVAL_REF))
-    refs.append((f"{dn['supplier_approval']} — stormwater approval pathway", STORMWATER_APPROVAL_REF))
-    refs.append((f"{dn['water_quality']} — concrete mixing water", "AS 1379 Tables 2.1-2.3 — compressive strength, impurity limits, turbidity"))
-    refs.append((f"{dn['water_quality']} — earthworks (compaction)", "Table 3-1 impurity limits (Sydney Water Recycled)"))
-    refs.append((f"{dn['water_quality']} — dust suppression", "Table 3.8 — treatment processes & on-site controls (unrestricted access)"))
-    refs.append((f"{dn['rwmp']} — RWMS framework", RWMS_SOURCE))
+    refs.append((f"{dn['supplier_approval']} — supplier: Council-run scheme",
+                 _cited(SUPPLIER_APPROVAL_REFS["Council-run scheme"],
+                        ("Local Government Act 1993", LGA1993_URL))))
+    refs.append((f"{dn['supplier_approval']} — supplier: Water supply authority",
+                 _cited(SUPPLIER_APPROVAL_REFS["Water supply authority"],
+                        ("Water Management Act 2000", WMA2000_URL))))
+    refs.append((f"{dn['supplier_approval']} — dual approval (user side)",
+                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL))))
+    refs.append((f"{dn['supplier_approval']} — stormwater approval pathway",
+                 _cited(STORMWATER_APPROVAL_REF,
+                        ("Local Government Act 1993", LGA1993_URL),
+                        ("Water Management Act 2000", WMA2000_URL))))
+    refs.append((f"{dn['water_quality']} — concrete mixing water",
+                 _cited("AS 1379 Tables 2.1-2.3 — compressive strength, impurity limits, turbidity",
+                        ("AS 1379", AS1379_URL))))
+    refs.append((f"{dn['water_quality']} — earthworks (compaction)",
+                 _cited("Table 3-1 impurity limits (Sydney Water Recycled)",
+                        ("Sydney Water Technical Specification", SYDNEY_WATER_TECH_SPEC_URL))))
+    refs.append((f"{dn['water_quality']} — dust suppression",
+                 _cited("Table 3.8 — treatment processes & on-site controls (unrestricted access)",
+                        ("AGWR Phase 1 (2006)", AGWR2006_URL))))
+    refs.append((f"{dn['rwmp']} — RWMS framework",
+                 _cited(RWMS_SOURCE, ("NSW Guidelines for Recycled Water Management Systems", NSW_OFFICE_OF_WATER_2015_URL))))
     for v in POEO_REFS.values():
-        refs.append((f"{dn['site_runoff']} — POEO Act 1997", v))
+        refs.append((f"{dn['site_runoff']} — POEO Act 1997", _cited(v, ("POEO Act 1997", POEO1997_URL))))
     refs.append((f"{dn['soil_conditions']} — soil & site", SOIL_TABLE_REF))
-    refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability", SOIL_SAR_EC_REF))
+    refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability",
+                 _cited(SOIL_SAR_EC_REF, ("ANZG (2018)", ANZG2018_URL))))
     refs.append((f"{dn['soil_conditions']} — USSL salinity classification", SOIL_USSL_REF))
-    refs.append((f"{dn['whs']} — WHS", WHS_REF))
-    refs.append((f"{dn['whs']} — WHS: buffer zone", AGWR_BUFFER_ZONE_REF))
+    refs.append((f"{dn['whs']} — WHS",
+                 _cited(WHS_REF, ("WHS Act 2011", WHS2011_URL), ("WHS Regulation 2017", WHSREG2017_URL))))
+    refs.append((f"{dn['whs']} — WHS: buffer zone",
+                 _cited(AGWR_BUFFER_ZONE_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: buffer zone limitation", AGWR_BUFFER_ZONE_LIMITATION_NOTE))
-    refs.append((f"{dn['whs']} — WHS: water class vs contact risk", WATER_CLASS_REF))
+    refs.append((f"{dn['whs']} — WHS: water class vs contact risk",
+                 _cited(WATER_CLASS_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: NSW Health", NSW_HEALTH_NOTE))
     refs.append((f"{dn['financial']} — financial", FINANCIAL_REF))
     return refs
@@ -912,10 +973,18 @@ def supplier_approval_regulation_refs():
     """Flat list of (topic, citation) for Phase 1."""
     dn = PHASE_DISPLAY_NAMES
     refs = []
-    for k, v in SUPPLIER_APPROVAL_REFS.items():
-        refs.append((f"{dn['supplier_approval']} — supplier: {k}", v))
-    refs.append((f"{dn['supplier_approval']} — dual approval (user side)", DUAL_APPROVAL_REF))
-    refs.append((f"{dn['supplier_approval']} — stormwater approval pathway", STORMWATER_APPROVAL_REF))
+    refs.append((f"{dn['supplier_approval']} — supplier: Council-run scheme",
+                 _cited(SUPPLIER_APPROVAL_REFS["Council-run scheme"],
+                        ("Local Government Act 1993", LGA1993_URL))))
+    refs.append((f"{dn['supplier_approval']} — supplier: Water supply authority",
+                 _cited(SUPPLIER_APPROVAL_REFS["Water supply authority"],
+                        ("Water Management Act 2000", WMA2000_URL))))
+    refs.append((f"{dn['supplier_approval']} — dual approval (user side)",
+                 _cited(DUAL_APPROVAL_REF, ("POEO Act 1997", POEO1997_URL))))
+    refs.append((f"{dn['supplier_approval']} — stormwater approval pathway",
+                 _cited(STORMWATER_APPROVAL_REF,
+                        ("Local Government Act 1993", LGA1993_URL),
+                        ("Water Management Act 2000", WMA2000_URL))))
     return refs
 
 
@@ -923,16 +992,23 @@ def water_quality_regulation_refs():
     """Flat list of (topic, citation) for Phase 3."""
     dn = PHASE_DISPLAY_NAMES
     refs = []
-    refs.append((f"{dn['water_quality']} — concrete mixing water", "AS 1379 Tables 2.1-2.3 — compressive strength, impurity limits, turbidity"))
-    refs.append((f"{dn['water_quality']} — earthworks (compaction)", "Table 3-1 impurity limits (Sydney Water Recycled)"))
-    refs.append((f"{dn['water_quality']} — dust suppression", "Table 3.8 — treatment processes & on-site controls (unrestricted access)"))
+    refs.append((f"{dn['water_quality']} — concrete mixing water",
+                 _cited("AS 1379 Tables 2.1-2.3 — compressive strength, impurity limits, turbidity",
+                        ("AS 1379", AS1379_URL))))
+    refs.append((f"{dn['water_quality']} — earthworks (compaction)",
+                 _cited("Table 3-1 impurity limits (Sydney Water Recycled)",
+                        ("Sydney Water Technical Specification", SYDNEY_WATER_TECH_SPEC_URL))))
+    refs.append((f"{dn['water_quality']} — dust suppression",
+                 _cited("Table 3.8 — treatment processes & on-site controls (unrestricted access)",
+                        ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     return refs
 
 
 def rwmp_regulation_refs():
     """Flat list of (topic, citation) for Phase 2."""
     refs = []
-    refs.append((f"{PHASE_DISPLAY_NAMES['rwmp']} — RWMS framework", RWMS_SOURCE))
+    refs.append((f"{PHASE_DISPLAY_NAMES['rwmp']} — RWMS framework",
+                 _cited(RWMS_SOURCE, ("NSW Guidelines for Recycled Water Management Systems", NSW_OFFICE_OF_WATER_2015_URL))))
     return refs
 
 
@@ -940,7 +1016,7 @@ def site_runoff_regulation_refs():
     """Flat list of (topic, citation) for Phase 4."""
     refs = []
     for v in POEO_REFS.values():
-        refs.append((f"{PHASE_DISPLAY_NAMES['site_runoff']} — POEO Act 1997", v))
+        refs.append((f"{PHASE_DISPLAY_NAMES['site_runoff']} — POEO Act 1997", _cited(v, ("POEO Act 1997", POEO1997_URL))))
     return refs
 
 
@@ -949,7 +1025,8 @@ def soil_conditions_regulation_refs():
     dn = PHASE_DISPLAY_NAMES
     refs = []
     refs.append((f"{dn['soil_conditions']} — soil & site", SOIL_TABLE_REF))
-    refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability", SOIL_SAR_EC_REF))
+    refs.append((f"{dn['soil_conditions']} — SAR/EC structural stability",
+                 _cited(SOIL_SAR_EC_REF, ("ANZG (2018)", ANZG2018_URL))))
     refs.append((f"{dn['soil_conditions']} — USSL salinity classification", SOIL_USSL_REF))
     return refs
 
@@ -958,10 +1035,13 @@ def whs_regulation_refs():
     """Flat list of (topic, citation) for Phase 6."""
     dn = PHASE_DISPLAY_NAMES
     refs = []
-    refs.append((f"{dn['whs']} — WHS", WHS_REF))
-    refs.append((f"{dn['whs']} — WHS: buffer zone", AGWR_BUFFER_ZONE_REF))
+    refs.append((f"{dn['whs']} — WHS",
+                 _cited(WHS_REF, ("WHS Act 2011", WHS2011_URL), ("WHS Regulation 2017", WHSREG2017_URL))))
+    refs.append((f"{dn['whs']} — WHS: buffer zone",
+                 _cited(AGWR_BUFFER_ZONE_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: buffer zone limitation", AGWR_BUFFER_ZONE_LIMITATION_NOTE))
-    refs.append((f"{dn['whs']} — WHS: water class vs contact risk", WATER_CLASS_REF))
+    refs.append((f"{dn['whs']} — WHS: water class vs contact risk",
+                 _cited(WATER_CLASS_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: NSW Health", NSW_HEALTH_NOTE))
     return refs
 
