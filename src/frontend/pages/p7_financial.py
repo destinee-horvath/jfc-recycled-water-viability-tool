@@ -7,7 +7,10 @@ Collects inputs across six sections (Water Costs, Pavement Profile, Road
 Geometry, Transport & Operational Costs, Dust Suppression, Concrete Kerb +
 Elements) — all always shown, matching the client's original cost model,
 which has no gate on any of these by Water Quality's selected application
-type — and renders backend.financial_analysis()'s output as a cost
+type. Dust Suppression and Concrete Kerb + Elements each carry their own
+"included" checkbox (same pattern as a pavement layer's) so an engineer can
+exclude either from a job that doesn't use it, without losing the entered
+figures. Renders backend.financial_analysis()'s output as a cost
 summary. All
 calculation logic lives in backend/phases/p7_financial.py — this module
 only collects inputs and displays results.
@@ -51,8 +54,10 @@ _SCALAR_KEYS = [
     "num_trucks", "hire_rate_per_hr", "fuel_efficiency", "diesel_price",
     "trips_per_truck", "hours_onsite", "truck_capacity_kL",
     "potable_distance_km", "recycled_distance_km", "area_type", "avg_speed_kmh",
+    "dust_suppression_included",
     "surface_area_m2", "site_conditions", "temperature_conditions",
     "applications_per_day", "water_per_m2_L", "effective_area_pct", "project_duration_days",
+    "concrete_included",
     "kerb_type", "water_cement_ratio", "additional_concrete_volume_m3",
 ]
 _WIDGET_KEYS = (
@@ -424,15 +429,24 @@ def _transport_section(d):
 
 def _dust_suppression_section(d):
     with _persisted_expander("💨 Dust Suppression", "financial_dust_suppression_expander"):
+        d["dust_suppression_included"] = st.checkbox(
+            "Dust suppression — relevant to this job",
+            value=bool(d.get("dust_suppression_included", True)),
+            help="Untick if this project doesn't use recycled water for dust "
+                 "suppression at all — excluded from the combined water "
+                 "volume/cost totals below, but the fields stay visible.",
+            key="financial_dust_suppression_included")
+        disabled = not d["dust_suppression_included"]
+
         c1, c2 = st.columns(2)
         with c1:
             d["surface_area_m2"] = st.number_input(
                 "Surface area (m²)", min_value=0.0, value=float(d["surface_area_m2"]),
-                key="financial_surface_area_m2")
+                key="financial_surface_area_m2", disabled=disabled)
         with c2:
             d["applications_per_day"] = st.number_input(
                 "Applications per day", min_value=0, step=1, value=int(d["applications_per_day"]),
-                key="financial_applications_per_day")
+                key="financial_applications_per_day", disabled=disabled)
 
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -440,40 +454,52 @@ def _dust_suppression_section(d):
                 "Site conditions (traffic, wind, temperature activity)",
                 C.DUST_SITE_CONDITIONS,
                 index=C.DUST_SITE_CONDITIONS.index(d.get("site_conditions", "Medium")),
-                key="financial_site_conditions")
+                key="financial_site_conditions", disabled=disabled)
         with c2:
             d["temperature_conditions"] = st.selectbox(
                 "Temperature conditions", C.DUST_TEMPERATURE_CONDITIONS,
                 index=C.DUST_TEMPERATURE_CONDITIONS.index(d.get("temperature_conditions", "Sunny")),
-                key="financial_temperature_conditions")
+                key="financial_temperature_conditions", disabled=disabled)
         with c3:
             d["water_per_m2_L"] = st.number_input(
                 "Water volume per m² (L)", min_value=0.0, value=float(d["water_per_m2_L"]),
-                key="financial_water_per_m2_L")
+                key="financial_water_per_m2_L", disabled=disabled)
 
         c1, c2 = st.columns(2)
         with c1:
             d["effective_area_pct"] = st.number_input(
                 "Effective area for dust suppression (%)", min_value=0.0, max_value=100.0,
-                value=float(d["effective_area_pct"]), key="financial_effective_area_pct")
+                value=float(d["effective_area_pct"]), key="financial_effective_area_pct",
+                disabled=disabled)
         with c2:
             d["project_duration_days"] = st.number_input(
                 "Project duration (days)", min_value=0.0,
                 value=float(d["project_duration_days"]), key="financial_project_duration_days",
+                disabled=disabled,
                 help="Not in the original cost model — added because its own "
                      "day-count formula for dust suppression cancelled out "
                      "algebraically to always equal the pavement volume, "
                      "making it independent of every other dust-suppression "
                      "input above. This field replaces it with an explicit, "
                      "editable duration.")
+        if disabled:
+            st.caption("Dust suppression excluded — not counted in the water volume/cost calculation.")
 
 
 def _concrete_mixing_section(d):
     with _persisted_expander("🧱 Concrete Kerb + Elements", "financial_concrete_kerb_expander"):
+        d["concrete_included"] = st.checkbox(
+            "Concrete kerb + elements — relevant to this job",
+            value=bool(d.get("concrete_included", True)),
+            help="Untick if this project has no concrete kerb/element water "
+                 "demand at all — excluded from the combined water "
+                 "volume/cost totals below, but the fields stay visible.",
+            key="financial_concrete_included")
+        disabled = not d["concrete_included"]
+
         st.caption("Water demand = (kerb concrete volume + additional concrete "
                    "volume) × water volume fraction for the selected water-"
-                   "cement ratio. Always included in the combined project "
-                   "volume, regardless of Water Quality's selected application type.")
+                   "cement ratio.")
         kerb_types = list(C.CONCRETE_KERB_VOLUME_PER_M.keys())
         ratios = list(C.CONCRETE_WATER_CEMENT_RATIO_TABLE.keys())
         c1, c2, c3 = st.columns(3)
@@ -482,20 +508,22 @@ def _concrete_mixing_section(d):
                 "Kerb type", kerb_types,
                 index=kerb_types.index(d.get("kerb_type", kerb_types[0])),
                 help="Kerb concrete volume per metre of road length.",
-                key="financial_kerb_type")
+                key="financial_kerb_type", disabled=disabled)
         with c2:
             d["water_cement_ratio"] = st.selectbox(
                 "Water-cement ratio", ratios,
                 index=ratios.index(d.get("water_cement_ratio", ratios[0])),
                 help="Water volume fraction of total concrete volume.",
-                key="financial_water_cement_ratio")
+                key="financial_water_cement_ratio", disabled=disabled)
         with c3:
             d["additional_concrete_volume_m3"] = st.number_input(
                 "Additional concrete volume (m³)", min_value=0.0,
                 value=float(d["additional_concrete_volume_m3"]),
                 help="Road elements not covered by the kerb lookup — e.g. "
                      "drainage pits, aprons.",
-                key="financial_additional_concrete_volume_m3")
+                key="financial_additional_concrete_volume_m3", disabled=disabled)
+        if disabled:
+            st.caption("Concrete kerb + elements excluded — not counted in the water volume/cost calculation.")
 
 
 def _input_review(d, total_width_m):
@@ -605,25 +633,31 @@ def _pavement_formula_help(fa: dict, d: dict) -> str:
 
 
 def _dust_suppression_formula_help(fa: dict, d: dict) -> str:
-    return (
+    text = (
         f"{d['surface_area_m2']:,.0f} m² × {d['water_per_m2_L']:g} L/m² × "
         f"{d['applications_per_day']:g} applications/day ÷ 1000 = "
         f"{fa['total_water_per_day_kL']:,.1f} kL/day at full coverage\n\n"
         f"× {d['effective_area_pct']:g}% effective area = "
         f"{fa['effective_water_kL']:,.1f} kL/day actually treated\n\n"
-        f"× {d['project_duration_days']:g} days = {fa['total_dust_suppression_kL']:,.1f} kL total"
+        f"× {d['project_duration_days']:g} days = {fa['dust_suppression_computed_kL']:,.1f} kL total"
     )
+    if not fa["dust_suppression_included"]:
+        text += "\n\nExcluded from combined totals — not relevant to this job."
+    return text
 
 
 def _concrete_formula_help(fa: dict, d: dict) -> str:
     water_fraction = C.CONCRETE_WATER_CEMENT_RATIO_TABLE.get(d["water_cement_ratio"], 0)
-    return (
+    text = (
         f"Kerb: {d['kerb_type']} ({C.CONCRETE_KERB_VOLUME_PER_M.get(d['kerb_type'], 0):g} m³/m) "
         f"× {d['road_length_m']:,.0f}m road = {fa['kerb_concrete_volume_m3']:,.1f} m³\n\n"
         f"+ {d['additional_concrete_volume_m3']:,.1f} m³ additional elements\n\n"
         f"× {water_fraction:g} water fraction (water:cement ratio {d['water_cement_ratio']:g}) "
-        f"= {fa['concrete_water_kL']:,.1f} kL"
+        f"= {fa['concrete_water_computed_kL']:,.1f} kL"
     )
+    if not fa["concrete_included"]:
+        text += "\n\nExcluded from combined totals — not relevant to this job."
+    return text
 
 
 def _combined_total_help(fa: dict) -> str:

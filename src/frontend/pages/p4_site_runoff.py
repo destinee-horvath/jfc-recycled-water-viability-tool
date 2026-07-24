@@ -59,9 +59,22 @@ def page_site_runoff(results):
         "Negative distances are not allowed.",
     )], "site_runoff")
 
-    d["slope_toward_waterway"] = st.checkbox(
-        "Site slope / drainage directs runoff toward waters",
-        value=bool(d.get("slope_toward_waterway")), key="site_runoff_slope_toward_waterway")
+    # Tri-state, not a checkbox — "unchecked" can't distinguish "confirmed no"
+    # from "never looked at it". Also handles legacy True/False from CSVs
+    # saved before this field became a tri-state.
+    slope_value = d.get("slope_toward_waterway")
+    if slope_value is True:
+        slope_value = "Yes"
+    elif slope_value is False:
+        slope_value = "No"
+    try:
+        slope_idx = C.APPROVAL_STATES.index(slope_value)
+    except ValueError:
+        slope_idx = len(C.APPROVAL_STATES) - 1
+    d["slope_toward_waterway"] = st.radio(
+        "Does site slope / drainage direct runoff toward waters?",
+        C.APPROVAL_STATES, index=slope_idx, horizontal=True,
+        key="site_runoff_slope_toward_waterway")
 
     d["sensitive_environment"] = st.selectbox(
         "Sensitive receiving environment", C.SENSITIVE_ENVIRONMENTS,

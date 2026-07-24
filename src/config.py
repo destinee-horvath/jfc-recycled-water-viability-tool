@@ -804,8 +804,11 @@ FINANCIAL_DEFAULTS = {
     "area_type": "Urban",           # "Urban (dense city)" | "Urban" | "Rural" — sets avg_speed_kmh's default
     "avg_speed_kmh": 50.0,
 
-    # --- Dust suppression — always included in the combined project volume
-    # (no application-type gate on this) ---
+    # --- Dust suppression — no application-type gate on this (Water
+    # Quality's selected application never excludes it), but the engineer
+    # can untick "included" below if this project doesn't use dust
+    # suppression at all — same pattern as a pavement layer's "included". ---
+    "dust_suppression_included": True,
     "surface_area_m2": 36000.0,
     "site_conditions": "Medium",
     "temperature_conditions": "Sunny",
@@ -818,8 +821,10 @@ FINANCIAL_DEFAULTS = {
     # backend/phases/p7_financial.py).
     "project_duration_days": 20,
 
-    # --- Concrete Kerb + Elements — always included in the combined
-    # project volume (no application-type gate on this either) ---
+    # --- Concrete Kerb + Elements — no application-type gate on this
+    # either, but likewise toggleable via "included" for jobs with no
+    # concrete kerb/element water demand. ---
+    "concrete_included": True,
     "kerb_type": "SL (standard road)",
     "water_cement_ratio": 0.42,
     "additional_concrete_volume_m3": 0.0,   # drainage pits, aprons, etc. — not covered by the kerb lookup

@@ -13,6 +13,64 @@ from ..components import render_phase_result
 from ..refdata import get_reference_data
 
 
+_END_USE_BY_APPLICATION_TYPE = {
+    "Concrete Mixing": "concrete mixing",
+    "Dust Suppression": "dust suppression",
+    "Earthworks (Compaction)": "compaction / subgrade moisture preparation",
+}
+_END_USE_FALLBACK = ("the intended roadworks application (e.g. compaction, "
+                      "subgrade moisture preparation, concrete mixing, or other)")
+
+
+def _rwmp_request_letter() -> str:
+    """Plain-text supplier-confirmation letter (FR2.5), pre-filled from
+    whatever's already entered in Setup/Phase 1/Phase 3 — added because no
+    public RWMP register exists for the user to check this themselves
+    (config.RWMP_LOOKUP_NOTE), so direct supplier confirmation is the only
+    path. Requests confirmation of exactly the four things this phase
+    assesses (FR2.1-FR2.4), nothing more."""
+    meta = st.session_state.meta
+    supplier = st.session_state.inputs.get("supplier_approval", {})
+    water_quality = st.session_state.inputs.get("water_quality", {})
+
+    project_name = meta.get("assessment_name") or "[project name]"
+    assessed_by = meta.get("assessed_by") or "[your name]"
+    application = _END_USE_BY_APPLICATION_TYPE.get(
+        water_quality.get("application_type"), _END_USE_FALLBACK)
+
+    if supplier.get("water_source") == "Stormwater":
+        scheme_line = "Scheme type: stormwater harvesting scheme"
+    elif supplier.get("supplier_authority"):
+        scheme_line = f"Scheme type: {supplier['supplier_authority']}"
+    else:
+        scheme_line = "Scheme type: [not yet recorded]"
+
+    return (
+        "To the Supplier,\n\n"
+        f"{project_name} is assessing the viability of using recycled water "
+        f"from your scheme for the following roadworks application: "
+        f"{application}.\n\n"
+        "As part of this assessment, we are required to confirm the "
+        "following about your Recycled Water Management Plan (RWMP), in "
+        "line with the NSW Guidelines for Recycled Water Management Systems "
+        "(NSW Office of Water, May 2015):\n\n"
+        "1. Does your scheme hold an approved RWMP?\n"
+        f"2. Does that RWMP explicitly list {application} as an approved "
+        "end use?\n"
+        "3. Can you confirm in writing that your approved RWMP complies "
+        "with all 12 elements of the NSW RWMS framework?\n"
+        "4. Has your RWMP been reviewed within the required period, and is "
+        "it current?\n\n"
+        "We were unable to locate a public register to confirm this "
+        "information ourselves, so we would appreciate your written "
+        "confirmation on each point above at your earliest convenience.\n\n"
+        f"{scheme_line}\n\n"
+        "Regards,\n"
+        f"{assessed_by}\n"
+        f"{project_name}"
+    )
+
+
 def page_rwmp(results):
     REF = get_reference_data()
     g = C.PHASE_BY_ID["rwmp"]
@@ -20,6 +78,21 @@ def page_rwmp(results):
     d = gi("rwmp")
 
     st.caption(C.RWMP_LOOKUP_NOTE)
+
+    with st.expander("✉ Request confirmation from your supplier", expanded=False):
+        st.caption("No public RWMP register exists — use this template to "
+                   "request confirmation directly from your supplier.")
+        letter_key = "rwmp_request_letter_text"
+        if letter_key not in st.session_state:
+            st.session_state[letter_key] = _rwmp_request_letter()
+        if st.button("🔄 Regenerate from current inputs", key="rwmp_regen_letter",
+                     help="Overwrites any edits below with a fresh letter "
+                          "built from what's currently entered in Setup, "
+                          "Phase 1, and Phase 3."):
+            st.session_state[letter_key] = _rwmp_request_letter()
+        st.text_area("Supplier request letter — copy and paste into your "
+                     "email client", key=letter_key, height=320)
+
     d["has_approved_rwmp"] = st.checkbox(
         "Supplier holds an approved RWMP for this scheme",
         value=bool(d.get("has_approved_rwmp")), key="rwmp_has_approved_rwmp")

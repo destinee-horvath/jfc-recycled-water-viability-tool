@@ -82,6 +82,88 @@ def test_proceed_when_not_extraction_or_processing_regardless_of_tonnes():
     assert check.state == "PROCEED"
 
 
+def test_conditional_when_completely_untouched():
+    """An engineer who never opens Phase 4 must NOT see a silent PROCEED —
+    the untouched waterway-distance and slope/drainage fields now always
+    generate their own CONDITIONAL, so the phase as a whole reads as
+    action-needed rather than confirmed clean."""
+    r = assess_site_runoff({})
+    assert r.state == "CONDITIONAL"
+
+
+def test_conditional_when_waterway_distance_not_measured():
+    inp = dict(VALID)
+    del inp["distance_to_waterway_m"]
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Within 100 m of waterway / drainage / stormwater outlet")
+    assert check.state == "CONDITIONAL"
+
+
+def test_proceed_when_waterway_distance_confirmed_outside_buffer():
+    r = assess_site_runoff(VALID)
+    check = next(c for c in r.checks
+                 if c.label == "Within 100 m of waterway / drainage / stormwater outlet")
+    assert check.state == "PROCEED"
+
+
+def test_conditional_when_slope_unconfirmed():
+    inp = dict(VALID)
+    del inp["slope_toward_waterway"]
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "CONDITIONAL"
+    assert "not yet confirmed" in check.detail.lower()
+
+
+def test_conditional_when_slope_explicitly_unconfirmed_string():
+    inp = dict(VALID, slope_toward_waterway="Unconfirmed")
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "CONDITIONAL"
+
+
+def test_conditional_when_slope_confirmed_yes():
+    inp = dict(VALID, slope_toward_waterway="Yes")
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "CONDITIONAL"
+
+
+def test_proceed_when_slope_confirmed_no():
+    inp = dict(VALID, slope_toward_waterway="No")
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "PROCEED"
+
+
+def test_slope_accepts_legacy_boolean_values():
+    """CSVs saved before this field became a tri-state stored plain
+    True/False — must still be interpreted correctly, not silently
+    downgraded to Unconfirmed."""
+    inp = dict(VALID, slope_toward_waterway=True)
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "CONDITIONAL"
+
+    inp = dict(VALID, slope_toward_waterway=False)
+    r = assess_site_runoff(inp)
+    check = next(c for c in r.checks
+                 if c.label == "Site slope / drainage directs runoff toward waters")
+    assert check.state == "PROCEED"
+
+
+def test_proceed_when_sensitive_environment_left_at_default():
+    r = assess_site_runoff(VALID)
+    check = next(c for c in r.checks if c.label == "Sensitive receiving environment")
+    assert check.state == "PROCEED"
+
+
 def test_schedule_1_check_runs_before_epl_check():
     """Confirms Schedule 1 runs before EPL — this pins that ordering."""
     inp = dict(VALID, involves_extraction_or_processing=True,

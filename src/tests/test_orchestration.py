@@ -38,6 +38,7 @@ FULLY_VIABLE_INPUTS = {
     "site_runoff": {
         "involves_extraction_or_processing": False,
         "distance_to_waterway_m": 200,
+        "slope_toward_waterway": "No",
         "sensitive_environment": "None / not sensitive",
         "ponding_overflow_risk": False,
         "containment_documented": False,

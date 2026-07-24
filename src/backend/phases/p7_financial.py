@@ -11,11 +11,14 @@ implemented literally, not "corrected" — each is flagged with a comment at
 the point it's implemented rather than silently fixed.
 
 Combined project volume (§6) is pavement + dust suppression + concrete
-kerb/elements, ALWAYS summed together — the source model has no branching
-by Water Quality's selected application type anywhere. (An earlier version
-of this module gated dust-suppression/concrete volume behind
-application_type — that was based on an unverified assumption and has
-been removed; the source model has no such gate.)
+kerb/elements, summed together with no branching by Water Quality's
+selected application type anywhere. (An earlier version of this module
+gated dust-suppression/concrete volume behind application_type — that was
+based on an unverified assumption and has been removed; the source model
+has no such gate.) Each of the three components can still be individually
+excluded from a job via its own "included" flag (dust_suppression_included,
+concrete_included, and per-layer for pavement) — a tool usability feature
+with no equivalent in the source model, not a Water-Quality-driven gate.
 
 Delivery days split into two additive parts (§10): pavement + concrete are
 trucked and divided by the fleet's daily capacity (delivery_days_trucked);
@@ -155,7 +158,10 @@ def financial_analysis(inp: dict) -> dict:
     default_speed = C.AREA_TYPE_SPEEDS.get(area_type, C.AREA_TYPE_SPEEDS[D["area_type"]])
     avg_speed_kmh = float(inp.get("avg_speed_kmh", default_speed) or 0)
 
-    # --- Dust suppression (§4) — ALWAYS computed, no application-type gate -----
+    # --- Dust suppression (§4) — no application-type gate, but toggleable via
+    # "included" for jobs that don't use dust suppression at all (same
+    # pattern as a pavement layer's "included") ---------------------------------
+    dust_suppression_included = bool(inp.get("dust_suppression_included", D["dust_suppression_included"]))
     surface_area_m2 = float(inp.get("surface_area_m2", D["surface_area_m2"]) or 0)
     water_per_m2_L = float(inp.get("water_per_m2_L", D["water_per_m2_L"]) or 0)
     applications_per_day = float(inp.get("applications_per_day", D["applications_per_day"]) or 0)
@@ -164,9 +170,13 @@ def financial_analysis(inp: dict) -> dict:
 
     total_water_per_day_kL = (surface_area_m2 * water_per_m2_L * applications_per_day) / 1000
     effective_water_kL = total_water_per_day_kL * (effective_area_pct / 100)
-    total_dust_suppression_kL = effective_water_kL * project_duration_days
+    # Always computed (informational, e.g. for the input-review/tooltip
+    # figures), even when excluded from the totals below.
+    dust_suppression_computed_kL = effective_water_kL * project_duration_days
+    total_dust_suppression_kL = dust_suppression_computed_kL if dust_suppression_included else 0.0
 
-    # --- Concrete Kerb + Elements (§5) — ALWAYS computed ------------------------
+    # --- Concrete Kerb + Elements (§5) — likewise toggleable via "included" ----
+    concrete_included = bool(inp.get("concrete_included", D["concrete_included"]))
     kerb_type = inp.get("kerb_type", D["kerb_type"])
     kerb_volume_per_m = C.CONCRETE_KERB_VOLUME_PER_M.get(
         kerb_type, C.CONCRETE_KERB_VOLUME_PER_M[D["kerb_type"]])
@@ -177,7 +187,9 @@ def financial_analysis(inp: dict) -> dict:
         inp.get("additional_concrete_volume_m3", D["additional_concrete_volume_m3"]) or 0)
 
     kerb_concrete_volume_m3 = kerb_volume_per_m * road_length_m
-    concrete_water_kL = (kerb_concrete_volume_m3 + additional_concrete_volume_m3) * water_volume_fraction
+    # Always computed (informational), even when excluded from the totals below.
+    concrete_water_computed_kL = (kerb_concrete_volume_m3 + additional_concrete_volume_m3) * water_volume_fraction
+    concrete_water_kL = concrete_water_computed_kL if concrete_included else 0.0
 
     # --- Combined project volume (§6) --------------------------------------------
     combined_total_volume_kL = total_pavement_volume_kL + total_dust_suppression_kL + concrete_water_kL
@@ -198,7 +210,7 @@ def financial_analysis(inp: dict) -> dict:
     trucked_volume_kL = total_pavement_volume_kL + concrete_water_kL
     delivery_days_trucked = (math.ceil(trucked_volume_kL / volume_per_day_kL)
                               if volume_per_day_kL > 0 else 0.0)
-    dust_suppression_days = project_duration_days
+    dust_suppression_days = project_duration_days if dust_suppression_included else 0.0
     total_delivery_days = delivery_days_trucked + dust_suppression_days
 
     # --- Water costs (§7) — rounded up to whole dollars, matching the source ----
@@ -252,12 +264,16 @@ def financial_analysis(inp: dict) -> dict:
         "total_water_per_day_kL": total_water_per_day_kL,
         "effective_water_kL": effective_water_kL,
         "project_duration_days": project_duration_days,
+        "dust_suppression_included": dust_suppression_included,
+        "dust_suppression_computed_kL": dust_suppression_computed_kL,
         "total_dust_suppression_kL": total_dust_suppression_kL,
 
         "kerb_type": kerb_type,
         "water_cement_ratio": water_cement_ratio,
         "additional_concrete_volume_m3": additional_concrete_volume_m3,
         "kerb_concrete_volume_m3": kerb_concrete_volume_m3,
+        "concrete_included": concrete_included,
+        "concrete_water_computed_kL": concrete_water_computed_kL,
         "concrete_water_kL": concrete_water_kL,
 
         "combined_total_volume_kL": combined_total_volume_kL,
@@ -363,11 +379,13 @@ def assess_financial(inp: dict, ctx: dict = None) -> PhaseResult:
     excluded = [name for name, inc in fa["layer_included"].items() if not inc]
     excluded_line = (f" ({', '.join(excluded)} excluded — not relevant to this job)"
                       if excluded else "")
+    dust_note = "" if fa["dust_suppression_included"] else " (excluded — not relevant to this job)"
+    concrete_note = "" if fa["concrete_included"] else " (excluded — not relevant to this job)"
     g.checks.append(CheckResult(
         "Total volume of water required", "PROCEED", C.FINANCIAL_REF,
         f"Pavement: {fa['total_pavement_volume_kL']:,.1f} kL{excluded_line}. "
-        f"Dust suppression: {fa['total_dust_suppression_kL']:,.1f} kL. "
-        f"Concrete kerb + elements: {fa['concrete_water_kL']:,.1f} kL. "
+        f"Dust suppression: {fa['total_dust_suppression_kL']:,.1f} kL{dust_note}. "
+        f"Concrete kerb + elements: {fa['concrete_water_kL']:,.1f} kL{concrete_note}. "
         f"Combined total: {fa['combined_total_volume_kL']:,.1f} kL.",
     ))
 

@@ -83,6 +83,11 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
             ))
 
     # --- Proximity to waters -------------------------------------------------
+    # Mirrors measured_table()'s own convention (see frontend/components.py):
+    # an untouched field starts at None and must read as "no result
+    # supplied" (CONDITIONAL), never silently disappear from the checklist —
+    # otherwise a distance no one ever entered reads identically to a
+    # distance confirmed safely outside the buffer.
     dist = inp.get("distance_to_waterway_m")
     if dist is not None and dist < 100:
         g.checks.append(CheckResult(
@@ -96,22 +101,61 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
             "PROCEED", C.POEO_REFS["s120"],
             f"{dist:g} m from waters — outside the 100 m screening buffer.",
         ))
+    else:
+        g.checks.append(CheckResult(
+            "Within 100 m of waterway / drainage / stormwater outlet",
+            "CONDITIONAL", C.POEO_REFS["s120"],
+            "Distance to nearest waterway/drainage/stormwater outlet not yet "
+            "measured — enter it to confirm this site is outside the 100 m "
+            "screening buffer.",
+        ))
 
     # --- Runoff direction -----------------------------------------------------
-    if inp.get("slope_toward_waterway"):
+    # Tri-state (Yes/No/Unconfirmed, see config.APPROVAL_STATES) rather than
+    # a checkbox — a checkbox's unchecked state can't distinguish "confirmed
+    # runoff does NOT drain toward waters" from "never looked at this field",
+    # so it always defaults to CONDITIONAL until actively confirmed either
+    # way. Also accepts legacy True/False from CSVs saved before this field
+    # became a tri-state.
+    slope = inp.get("slope_toward_waterway")
+    if slope is True or slope == "Yes":
         g.checks.append(CheckResult(
             "Site slope / drainage directs runoff toward waters", "CONDITIONAL",
             C.POEO_REFS["s120"],
             "Site-specific runoff management plan required.",
         ))
+    elif slope is False or slope == "No":
+        g.checks.append(CheckResult(
+            "Site slope / drainage directs runoff toward waters", "PROCEED",
+            C.POEO_REFS["s120"],
+            "Confirmed: site slope/drainage does not direct runoff toward waters.",
+        ))
+    else:
+        g.checks.append(CheckResult(
+            "Site slope / drainage directs runoff toward waters", "CONDITIONAL",
+            C.POEO_REFS["s120"],
+            "Not yet confirmed — determine whether site slope/drainage "
+            "directs runoff toward waters.",
+        ))
 
     # --- Sensitive receiving environment --------------------------------------
+    # The selectbox always shows an explicit choice (unlike a checkbox, its
+    # default IS visible to the user), so recording PROCEED for the
+    # "None / not sensitive" default is a legitimate confirmation, not a
+    # silent pass — consistent with how every other selectbox default in
+    # this tool is treated.
     sens = inp.get("sensitive_environment", C.SENSITIVE_ENVIRONMENTS[0])
     if sens and sens != C.SENSITIVE_ENVIRONMENTS[0]:
         g.checks.append(CheckResult(
             "Sensitive receiving environment", "CONDITIONAL",
             f"{C.POEO_REFS['s120']}; {C.POEO_REFS['s123']}",
             f"{sens} — additional environmental assessment required before proceeding.",
+        ))
+    else:
+        g.checks.append(CheckResult(
+            "Sensitive receiving environment", "PROCEED",
+            f"{C.POEO_REFS['s120']}; {C.POEO_REFS['s123']}",
+            "None / not sensitive selected.",
         ))
 
     # --- PIRMP (mandatory for EPL holders) ------------------------------------
