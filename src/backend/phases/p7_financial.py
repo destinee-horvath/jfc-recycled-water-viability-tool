@@ -68,6 +68,15 @@ def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_tru
         speed selector. Confirm this assumption before changing it — this
         silently misprices fuel whenever the selected area type's speed
         isn't 50 (i.e. whenever it isn't "Urban").
+
+    RESOLVED (2026-07-24): an earlier review question asked whether
+    ``hire_rate_per_hr`` (config.FINANCIAL_DEFAULTS default $200/hr)
+    already includes fuel, which would make the ``fuel_costs`` term below
+    double-count it. Confirmed with the client: the hire rate is
+    truck-and-driver only and excludes fuel, so the two additive terms
+    (``total_hours * hire_rate_per_hr`` and ``fuel_costs``) are genuinely
+    separate cost components, not an overlap. No calculation change
+    required.
     """
     travel_hours_per_truck = ((distance_km / avg_speed_kmh) * 2 * trips_per_truck
                                if avg_speed_kmh > 0 else 0.0)

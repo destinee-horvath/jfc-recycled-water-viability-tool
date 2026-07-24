@@ -61,28 +61,17 @@ DISCLAIMER = (
 
 # What to have ready before starting an assessment — shown on the Setup page
 # so engineers know what to gather first, rather than discovering it phase by
-# phase. Each item names the phase it's assessed in.
+# phase.
 TOOL_PREREQUISITES = [
-    "Water source and supplier details, and whether the scheme has ever "
-    "operated without approval (Supplier & Dual Approval)",
-    "The supplier's statutory approval (council s.60 or water authority "
-    "s.292) — or, for stormwater, the alternative approval pathway "
-    "(Supplier & Dual Approval)",
-    "Your own EPL or development consent confirming this specific "
-    "roadworks use is permitted — supplier approval alone is not enough "
-    "(Supplier & Dual Approval, dual approval)",
-    "An approved Recycled Water Management Plan (RWMP) that explicitly "
-    "covers this end use (Recycled Water Management Plan)",
-    "Water quality test results relevant to your application — concrete "
-    "mixing, dust suppression, or earthworks (Water Quality)",
-    "Site details: distance to waterways, EPL status, and containment/"
-    "overflow arrangements (Site Runoff & EPL Risk)",
-    "Soil test results, if available: USCS classification of the natural "
-    "subgrade soil, and SAR/EC of the recycled water source "
-    "(Soil & Site Conditions)",
-    "WHS arrangements: SWMS, PPE, and site signage (Worker Health & Safety)",
-    "Indicative project costs — placeholder average values are provided "
-    "if exact figures aren't available yet (Financial Feasibility)",
+    "Water source & supplier details",
+    "Supplier's approval (council, water authority, or stormwater)",
+    "Your own EPL or development consent",
+    "Approved RWMP for this use",
+    "Water quality test results",
+    "Site details: waterway distance, EPL status, containment",
+    "Soil test results (USCS class, SAR/EC) — optional",
+    "Estimated project costs — optional, defaults provided",
+    "WHS arrangements: SWMS, PPE, signage",
 ]
 
 # Single source of truth for every phase's display name — no "Phase N"
@@ -106,6 +95,12 @@ PHASE_DISPLAY_NAMES = {
 # backend.readiness_summary(), but it never blocks the user from working
 # through the remaining phases.
 PHASES = [
+    {
+        "id": "financial",
+        "label": PHASE_DISPLAY_NAMES["financial"],
+        "desc": "Whole-of-life cost incl. transport & restrictions.",
+        "mandatory": False,
+    },
     {
         "id": "supplier_approval",
         "label": PHASE_DISPLAY_NAMES["supplier_approval"],
@@ -142,12 +137,6 @@ PHASES = [
         "desc": "WHS Act/Reg 2017 — notification, health risks, PPE, contact & method.",
         "mandatory": True,
     },
-    {
-        "id": "financial",
-        "label": PHASE_DISPLAY_NAMES["financial"],
-        "desc": "Whole-of-life cost incl. transport & restrictions.",
-        "mandatory": False,
-    },
 ]
 
 # Lookup by id — used wherever code needs a phase's metadata without relying
@@ -167,16 +156,16 @@ PHASE_BY_ID = {p["id"]: p for p in PHASES}
 USE_GROUPED_SECTIONS = True
 
 FLAT_PHASE_ORDER = [
-    "supplier_approval", "rwmp", "water_quality", "site_runoff", "soil_conditions", "whs", "financial",
+    "financial", "supplier_approval", "rwmp", "water_quality", "site_runoff", "soil_conditions", "whs",
 ]
 GROUPED_PHASE_ORDER = [
+    "financial",   # Financial Feasibility
     "supplier_approval",   # Supplier & Dual Approval
     "rwmp",   # RWMP
     "water_quality",   # Water Quality
     "site_runoff",   # Site Runoff & EPL
     "soil_conditions",   # Soil & Site Conditions
     "whs",   # WHS
-    "financial",   # Financial Feasibility
 ]
 PHASE_ORDER = GROUPED_PHASE_ORDER if USE_GROUPED_SECTIONS else FLAT_PHASE_ORDER
 
@@ -185,9 +174,9 @@ PHASE_ORDER = GROUPED_PHASE_ORDER if USE_GROUPED_SECTIONS else FLAT_PHASE_ORDER
 # prefixes (e.g. water_quality.xxx / rwmp.xxx), so changing an id still
 # orphans existing saved files; re-save any assessment after an id rename.
 PHASE_SECTIONS = [
+    {"title": "Financial Feasibility", "phases": ["financial"]},
     {"title": "Compliance Requirements", "phases": ["supplier_approval", "rwmp", "water_quality"]},
     {"title": "Risk Assessment", "phases": ["site_runoff", "soil_conditions", "whs"]},
-    {"title": "Financial Feasibility", "phases": ["financial"]},
 ]
 
 # ----------------------------------------------------------------------------
@@ -641,7 +630,7 @@ BASE_LAYER_DEFAULTS = {
 # ----------------------------------------------------------------------------
 SOIL_SAR_EC_REF = (
     "Team-derived linear approximation of the SAR-EC "
-    "structural-stability boundary in ANZG (2023) Water Quality for "
+    "structural-stability boundary in ANZG (2018) Water Quality for "
     "Irrigation and General Water Uses: Guidelines, draft revised Ch 4.2 "
     "s.3.2, Fig 2, p.12 — SAR = 4.3 x EC - 0.4 (EC in dS/m). Not an "
     "independently published/verified formula."
@@ -804,7 +793,7 @@ FINANCIAL_DEFAULTS = {
 
     # --- Section 4: Transport & operational costs ---
     "num_trucks": 5,
-    "hire_rate_per_hr": 200.0,      # $/hour, incl. driver
+    "hire_rate_per_hr": 200.0,      # $200/hr = truck + driver only, confirmed with client 2026-07-24 — does not include fuel, which is calculated separately
     "fuel_efficiency": 40.0,        # L/100km
     "diesel_price": 2.00,           # $/L
     "trips_per_truck": 4,

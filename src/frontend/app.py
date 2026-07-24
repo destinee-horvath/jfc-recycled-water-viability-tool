@@ -14,7 +14,7 @@ import config as C
 import backend as B
 
 from .styles import inject_css
-from .state import init_state, current_results, reset_widget_state
+from .state import init_state, current_results, reset_widget_state, autosave_progress
 from .components import progress_bar
 from .refdata import get_reference_data, PHASE_BY_ID
 from .theme import badge
@@ -138,6 +138,11 @@ def main():
         page_save_export(current_results())
     elif current_phase_id:
         PAGE_FUNCS[current_phase_id](current_results())
+
+    # After the page above has written this run's widget values into
+    # st.session_state.inputs — same ordering reason as the section
+    # banner/progress bar below.
+    autosave_progress()
 
     if section_slot is not None:
         with section_slot.container():
