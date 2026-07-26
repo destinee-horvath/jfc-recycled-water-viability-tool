@@ -2,6 +2,7 @@
 # .env
 documentation/
 diagrams/
+saved_assessments/
 
 # Python
 __pycache__/

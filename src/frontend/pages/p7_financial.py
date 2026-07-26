@@ -85,6 +85,14 @@ def page_financial(results):
                 st.session_state.pop(k, None)
             st.rerun()
 
+    st.info(
+        "DISCLAIMER: This financial feasibility assessment is an estimate only, "
+        "based on the figures entered and default assumptions. It should not be "
+        "relied upon as the final source of truth — confirm actual costs and "
+        "rates with suppliers, contractors, and the relevant council/water "
+        "authority before making financial decisions."
+    )
+
     d = gi("financial")
     D = C.FINANCIAL_DEFAULTS
     # One-way defaults only: read Phase 5's soil_to_financial (if the
