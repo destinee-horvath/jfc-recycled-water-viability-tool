@@ -4,11 +4,9 @@ backend/phases/p7_financial.py
 PHASE — FINANCIAL FEASIBILITY (never a hard reject)
 
 Ported term-for-term from the client's original cost model — treated as
-ground truth. Where this disagreed with the tool's earlier implementation
-or the URS/SRS, the documentation was updated to match the model, not the
-other way around. Quirks in the source model that look like bugs are
+ground truth. Quirks in the source model that look like bugs are
 implemented literally, not "corrected" — each is flagged with a comment at
-the point it's implemented rather than silently fixed.
+the point it's implemented.
 
 Combined project volume (§6) is pavement + dust suppression + concrete
 kerb/elements, summed together with no branching by Water Quality's
@@ -66,14 +64,9 @@ def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_tru
         silently misprices fuel whenever the selected area type's speed
         isn't 50 (i.e. whenever it isn't "Urban").
 
-    RESOLVED (2026-07-24): an earlier review question asked whether
-    ``hire_rate_per_hr`` (config.FINANCIAL_DEFAULTS default $200/hr)
-    already includes fuel, which would make the ``fuel_costs`` term below
-    double-count it. Confirmed with the client: the hire rate is
-    truck-and-driver only and excludes fuel, so the two additive terms
-    (``total_hours * hire_rate_per_hr`` and ``fuel_costs``) are genuinely
-    separate cost components, not an overlap. No calculation change
-    required.
+    ``hire_rate_per_hr`` is truck-and-driver only and excludes fuel, so the
+    two additive terms below (``total_hours * hire_rate_per_hr`` and
+    ``fuel_costs``) are separate cost components, not a double-count.
     """
     travel_hours_per_truck = ((distance_km / avg_speed_kmh) * 2 * trips_per_truck
                                if avg_speed_kmh > 0 else 0.0)
@@ -86,8 +79,8 @@ def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_tru
 
 def financial_analysis(inp: dict) -> dict:
     """Combined water-volume + whole-of-project cost model — see module
-    docstring. No longer takes an application_type argument: the source
-    model doesn't gate any Phase 7 calculation on Water Quality's selection."""
+    docstring. Takes no application_type argument: the source model doesn't
+    gate any Phase 7 calculation on Water Quality's selection."""
     D = C.FINANCIAL_DEFAULTS
 
     # --- Water costs (§1, keyed off region) -------------------
@@ -302,10 +295,10 @@ def financial_analysis(inp: dict) -> dict:
 def recycled_distance_breakeven_curve(inp: dict, n_points: int = 40) -> dict:
     """
     Cost-vs-distance curve for the "Cost summary & break-even analysis"
-    chart. Unlike the old single-shared-distance model, potable and
-    recycled now have their own independent distance inputs, so there's no
-    one shared axis to sweep — this sweeps ``recycled_distance_km`` only
-    (holding every other input, including ``potable_distance_km``, fixed),
+    chart. Potable and recycled have independent distance inputs, so
+    there's no single shared axis to sweep — this sweeps
+    ``recycled_distance_km`` only (holding every other input, including
+    ``potable_distance_km``, fixed),
     since that's the distance an engineer can actually negotiate/shop
     around on. Potable's totals are therefore flat reference lines here,
     not because they're distance-independent in general, but because this

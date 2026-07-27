@@ -20,10 +20,9 @@ class CheckResult:
     state: str          # PROCEED | CONDITIONAL | REJECT | NA
     reference: str = ""
     detail: str = ""
-    # Input dict key this check evaluates, if it maps 1:1 to a single field
-    # (e.g. "conc_sugar") — lets the frontend colour that field's input box
-    # by this check's state. Left blank for checks with no single field
-    # (e.g. compound/derived checks), which just aren't colourable.
+    # Input dict key this check evaluates (e.g. "conc_sugar"), letting the
+    # frontend colour that field's input box by this check's state. Left
+    # blank for checks with no single field (e.g. compound/derived checks).
     key: str = ""
 
 

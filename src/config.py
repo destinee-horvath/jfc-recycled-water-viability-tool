@@ -19,9 +19,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Anchored to this file's own location, not the process's working directory
-# — see frontend/app.py's IMAGES_DIR for the same fix applied to the logo
-# images; SAVE_DIR had the identical cwd-dependent bug.
+# Anchored to this file's own location, not the process's working directory,
+# so SAVE_DIR stays valid regardless of where the app is launched from (see
+# frontend/app.py's IMAGES_DIR for the same pattern).
 BASE_DIR = Path(__file__).resolve().parent
 
 # ----------------------------------------------------------------------------
@@ -75,8 +75,7 @@ TOOL_PREREQUISITES = [
 ]
 
 # Single source of truth for every phase's display name — no "Phase N"
-# prefix anywhere in the UI. Referenced by PHASES below (so there is exactly
-# one place that defines what each phase is called), and by config.py's own
+# prefix anywhere in the UI. Referenced by PHASES below and by the
 # regulation-reference builders further down.
 PHASE_DISPLAY_NAMES = {
     "supplier_approval": "Supplier & Dual Approval",
@@ -148,10 +147,9 @@ PHASE_BY_ID = {p["id"]: p for p in PHASES}
 # UI GROUPING — display/execution order and section structure. One flag
 # switches layouts without touching frontend/backend code. Every phase page
 # looks itself up via PHASE_BY_ID (never a positional PHASES[N] index), so
-# PHASES' own list order is free to change — it drives the Setup-page
-# prerequisites list, the progress bar, the Summary page's phase columns,
-# and the Next-button flow (frontend/state.py's _next_phase_label), all of
-# which iterate PHASES directly.
+# this order is free to change — it drives the Setup-page prerequisites
+# list, the progress bar, the Summary page's phase columns, and the
+# Next-button flow (frontend/state.py's _next_phase_label).
 # ----------------------------------------------------------------------------
 USE_GROUPED_SECTIONS = True
 
@@ -159,13 +157,13 @@ FLAT_PHASE_ORDER = [
     "financial", "supplier_approval", "rwmp", "water_quality", "site_runoff", "soil_conditions", "whs",
 ]
 GROUPED_PHASE_ORDER = [
-    "financial",   # Financial Feasibility
-    "supplier_approval",   # Supplier & Dual Approval
-    "rwmp",   # RWMP
-    "water_quality",   # Water Quality
-    "site_runoff",   # Site Runoff & EPL
-    "soil_conditions",   # Soil & Site Conditions
-    "whs",   # WHS
+    "financial",
+    "supplier_approval",
+    "rwmp",
+    "water_quality",
+    "site_runoff",
+    "soil_conditions",
+    "whs",
 ]
 PHASE_ORDER = GROUPED_PHASE_ORDER if USE_GROUPED_SECTIONS else FLAT_PHASE_ORDER
 
@@ -270,7 +268,7 @@ SUPPLIER_SECTION_TOOLTIPS = {
     ),
 }
 
-# EPL section — informational only (see module docstring note above).
+# EPL section — informational only (see note above).
 EPL_SECTION_TITLE = "Does the supplier hold an Environment Protection Licence (EPL)?"
 EPL_SECTION_EXPLANATION = (
     "An EPL sets a facility's legal operating conditions"
@@ -324,11 +322,10 @@ EPL_REGISTER_NOTE = (
     "licensee name or location."
 )
 
-# No confirmed public RWMP register exists (as of this tool's build) — DPIE
-# is understood to be working toward publishing approval instruments, but
-# RWMP status currently is not independently searchable. Deliberately no
-# link here — see the client UI/UX flag on this item; a link should only be
-# added once a public register is confirmed to exist.
+# No confirmed public RWMP register exists — DPIE is understood to be
+# working toward publishing approval instruments, but RWMP status isn't
+# independently searchable yet. Deliberately no link here; add one only
+# once a public register is confirmed to exist.
 RWMP_LOOKUP_NOTE = (
     "No public RWMP register is available to check this against — confirm "
     "current RWMP status directly with the supplier."
@@ -624,9 +621,8 @@ BASE_LAYER_DEFAULTS = {
 #
 # Stable if actual SAR <= SOIL_STABILITY_SLOPE*EC + SOIL_STABILITY_INTERCEPT
 # at that EC; above the line is unstable. Team-derived fit (see
-# SOIL_SAR_EC_REF) — replaced an earlier clay-%-interpolated curve-A/B
-# approach with one universal boundary. EC is dS/m (1 dS/m = 1000 uS/cm) —
-# don't mix with the USSL uS/cm axis below.
+# SOIL_SAR_EC_REF). EC is dS/m (1 dS/m = 1000 uS/cm) — don't mix with the
+# USSL uS/cm axis below.
 # ----------------------------------------------------------------------------
 SOIL_SAR_EC_REF = (
     "Team-derived linear approximation of the SAR-EC "
@@ -804,7 +800,7 @@ FINANCIAL_DEFAULTS = {
     # can untick "included" below if this project doesn't use dust
     # suppression at all — same pattern as a pavement layer's "included". ---
     "dust_suppression_included": True,
-    "surface_area_m2": 36000.0,
+    "surface_area_m2": 36000.0,          # bare fallback only (e.g. financial_analysis({})) — the live page always overwrites this from Road Geometry on first render, see DUST_SITE_CONDITIONS_WATER_L_M2/DUST_TEMPERATURE_APPLICATIONS_PER_DAY below
     "site_conditions": "Medium",
     "temperature_conditions": "Sunny",
     "applications_per_day": 5,
@@ -855,8 +851,13 @@ FINANCIAL_REGIONS = {
 # Default average travel speed by area type, real client data.
 AREA_TYPE_SPEEDS = {"Urban (dense city)": 40.0, "Urban": 50.0, "Rural": 60.0}
 
-DUST_SITE_CONDITIONS = ["Low", "Medium", "High"]
-DUST_TEMPERATURE_CONDITIONS = ["Sunny", "Cloudy", "Rainy"]
+# Default water volume per m² by site condition (L/m²), and default
+# applications per day by temperature condition — sets water_per_m2_L's and
+# applications_per_day's defaults respectively when the corresponding
+# selectbox changes (same "auto-fill, editable" pattern as AREA_TYPE_SPEEDS
+# above for avg_speed_kmh).
+DUST_SITE_CONDITIONS_WATER_L_M2 = {"Low": 1.0, "Medium": 2.0, "High": 4.0}
+DUST_TEMPERATURE_APPLICATIONS_PER_DAY = {"Overcast": 3, "Sunny": 4, "Hot and Sunny": 6}
 
 # Optional OpenRouteService integration (Phase Financial's transport distance
 # inputs) — geocodes an address and looks up driving distance, as an
@@ -892,8 +893,8 @@ NSW_RECYCLED_WATER_ROADMAP_URL = (
 #
 # NSW legislation links point to the NSW Parliamentary Counsel's Office site
 # (legislation.nsw.gov.au), which always redirects to the *current in-force
-# version* — no need to update these later as an Act is amended. Verified via
-# web search 2026-07-24.
+# version* — no need to update these later as an Act is amended. Verified
+# 2026-07-24.
 # ----------------------------------------------------------------------------
 LGA1993_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1993-030"
 WMA2000_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-2000-092"

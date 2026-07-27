@@ -21,14 +21,6 @@ def page_summary(results):
 
     st.subheader("Phase outcomes")
     all_phase_ids = [p["id"] for p in C.PHASES]
-    # Phase picker disabled — always show every phase.
-    # selected_ids = st.multiselect(
-    #     "Phases to show",
-    #     options=all_phase_ids,
-    #     default=all_phase_ids,
-    #     format_func=lambda pid: C.PHASE_BY_ID[pid]["label"],
-    #     key="summary_selected_phases",
-    # )
     selected_ids = all_phase_ids
     selected_phases = [p for p in C.PHASES if p["id"] in selected_ids]
 

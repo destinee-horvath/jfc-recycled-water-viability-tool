@@ -115,9 +115,9 @@ def value_table(items, phase_id, show_header=True):
     last) but without the Measured/Not measured toggle, since these fields
     are always required. Caller must st.session_state.setdefault(widget_key,
     ...) before calling, same as a plain st.number_input() would need.
-    ``show_header=False`` skips the header row — use when this call's rows
-    follow directly on from a value_table()/measured_table() call that
-    already drew the header, so the two read as one continuous table.
+    ``show_header=False`` behaves as in measured_table() — skips the header
+    row when rows continue directly from a prior value_table()/
+    measured_table() call.
     """
     d = gi(phase_id)
     if show_header:

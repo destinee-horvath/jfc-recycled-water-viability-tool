@@ -132,8 +132,8 @@ def load_assessment_file(filename: str) -> dict:
 
 def record_to_inputs(rec: dict) -> tuple[dict[str, dict], dict]:
     """Split a saved record back into (inputs, meta) for repopulating fields.
-    Tolerates legacy verdict/score columns from files saved before that
-    concept was removed — silently dropped, not surfaced in meta."""
+    Drops any legacy verdict/score columns (from older saved files) rather
+    than surfacing them in meta."""
     meta = {
         "assessment_name": rec.get("assessment_name", ""),
         "assessed_by": rec.get("assessed_by", ""),

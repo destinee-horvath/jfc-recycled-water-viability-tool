@@ -10,10 +10,9 @@ which has no gate on any of these by Water Quality's selected application
 type. Dust Suppression and Concrete Kerb + Elements each carry their own
 "included" checkbox (same pattern as a pavement layer's) so an engineer can
 exclude either from a job that doesn't use it, without losing the entered
-figures. Renders backend.financial_analysis()'s output as a cost
-summary. All
-calculation logic lives in backend/phases/p7_financial.py — this module
-only collects inputs and displays results.
+figures. Renders backend.financial_analysis()'s output as a cost summary.
+All calculation logic lives in backend/phases/p7_financial.py — this
+module only collects inputs and displays results.
 """
 
 import altair as alt
@@ -132,7 +131,7 @@ def page_financial(results):
     # Dust suppression and concrete kerb+elements are always shown and always
     # included in the combined project volume — the source model has no
     # gate on either by Water Quality's selected application type.
-    _dust_suppression_section(d)
+    _dust_suppression_section(d, total_width_m)
     _concrete_mixing_section(d)
 
     fa = B.financial_analysis(d)
@@ -412,14 +411,11 @@ def _transport_section(d):
                 if d.get("area_type") in area_types else area_types.index("Urban"),
                 horizontal=True, key="financial_area_type")
         if new_area_type != d.get("area_type"):
-            # Area type just changed — reset the speed to that type's default.
-            # Once the user edits the speed field directly, it's left alone.
-            # Both `d` AND the number_input's own session_state key must be
-            # updated here, before that widget is instantiated below —
-            # passing a new `value=` alone has no effect once a widget's key
-            # already holds a value in session_state (Streamlit ignores
-            # `value` on every run after the first for a given key), which
-            # is why the area-type buttons previously appeared to do nothing.
+            # Area type just changed — reset the speed to that type's
+            # default. Both `d` AND the number_input's session_state key
+            # must be updated here, before that widget is instantiated
+            # below — passing a new `value=` alone has no effect once a
+            # widget's key already holds a value in session_state.
             d["avg_speed_kmh"] = C.AREA_TYPE_SPEEDS[new_area_type]
             st.session_state["financial_avg_speed_kmh"] = d["avg_speed_kmh"]
         d["area_type"] = new_area_type
@@ -429,7 +425,7 @@ def _transport_section(d):
                 step=1.0, key="financial_avg_speed_kmh")
 
 
-def _dust_suppression_section(d):
+def _dust_suppression_section(d, total_width_m):
     with _persisted_expander("💨 Dust Suppression", "financial_dust_suppression_expander"):
         d["dust_suppression_included"] = st.checkbox(
             "Dust suppression — relevant to this job",
@@ -440,32 +436,69 @@ def _dust_suppression_section(d):
             key="financial_dust_suppression_included")
         disabled = not d["dust_suppression_included"]
 
+        # Auto-fill pattern: each selectbox is compared against a hidden
+        # "_source" key (not the persisted field itself, which is already
+        # pre-seeded by setdefault() and so would never register as
+        # "changed" on a brand-new assessment's first render) so the mapped
+        # default is applied both on first render and on every later
+        # change, without overwriting a manual edit in between.
         c1, c2 = st.columns(2)
         with c1:
-            d["surface_area_m2"] = st.number_input(
-                "Surface area (m²)", min_value=0.0, value=float(d["surface_area_m2"]),
-                key="financial_surface_area_m2", disabled=disabled)
-        with c2:
-            d["applications_per_day"] = st.number_input(
-                "Applications per day", min_value=0, step=1, value=int(d["applications_per_day"]),
-                key="financial_applications_per_day", disabled=disabled)
+            site_options = list(C.DUST_SITE_CONDITIONS_WATER_L_M2.keys())
+            new_site_conditions = st.selectbox(
+                "Site conditions (traffic, wind, temperature activity)",
+                site_options,
+                index=site_options.index(d.get("site_conditions", "Medium")),
+                key="financial_site_conditions", disabled=disabled)
+        if new_site_conditions != d.get("_dust_water_per_m2_source"):
+            d["water_per_m2_L"] = C.DUST_SITE_CONDITIONS_WATER_L_M2[new_site_conditions]
+            st.session_state["financial_water_per_m2_L"] = d["water_per_m2_L"]
+        d["site_conditions"] = new_site_conditions
+        d["_dust_water_per_m2_source"] = new_site_conditions
 
+        with c2:
+            temp_options = list(C.DUST_TEMPERATURE_APPLICATIONS_PER_DAY.keys())
+            new_temperature_conditions = st.selectbox(
+                "Temperature conditions", temp_options,
+                index=temp_options.index(d.get("temperature_conditions", "Sunny")),
+                key="financial_temperature_conditions", disabled=disabled)
+        if new_temperature_conditions != d.get("_dust_applications_source"):
+            d["applications_per_day"] = C.DUST_TEMPERATURE_APPLICATIONS_PER_DAY[new_temperature_conditions]
+            st.session_state["financial_applications_per_day"] = d["applications_per_day"]
+        d["temperature_conditions"] = new_temperature_conditions
+        d["_dust_applications_source"] = new_temperature_conditions
+
+        # Surface area: auto-computed from Road Geometry's total width ×
+        # road length, re-applied whenever that product changes.
+        geometry_area_m2 = total_width_m * d["road_length_m"]
+        if geometry_area_m2 != d.get("_dust_geometry_area_m2"):
+            d["surface_area_m2"] = geometry_area_m2
+            st.session_state["financial_surface_area_m2"] = geometry_area_m2
+        d["_dust_geometry_area_m2"] = geometry_area_m2
+
+        # No `value=` on these three — the trigger blocks above already set
+        # session_state before each widget is created, so `value=` would
+        # only conflict with it (see the distance-field comment above).
         c1, c2, c3 = st.columns(3)
         with c1:
-            d["site_conditions"] = st.selectbox(
-                "Site conditions (traffic, wind, temperature activity)",
-                C.DUST_SITE_CONDITIONS,
-                index=C.DUST_SITE_CONDITIONS.index(d.get("site_conditions", "Medium")),
-                key="financial_site_conditions", disabled=disabled)
+            d["surface_area_m2"] = st.number_input(
+                "Surface area (m²)", min_value=0.0,
+                key="financial_surface_area_m2", disabled=disabled,
+                help="Auto-calculated as total road width × road length "
+                     "from the Road Geometry section above — edit directly "
+                     "to override.")
         with c2:
-            d["temperature_conditions"] = st.selectbox(
-                "Temperature conditions", C.DUST_TEMPERATURE_CONDITIONS,
-                index=C.DUST_TEMPERATURE_CONDITIONS.index(d.get("temperature_conditions", "Sunny")),
-                key="financial_temperature_conditions", disabled=disabled)
+            d["applications_per_day"] = st.number_input(
+                "Applications per day", min_value=0, step=1,
+                key="financial_applications_per_day", disabled=disabled,
+                help="Auto-filled from the selected temperature conditions "
+                     "— edit directly to override.")
         with c3:
             d["water_per_m2_L"] = st.number_input(
-                "Water volume per m² (L)", min_value=0.0, value=float(d["water_per_m2_L"]),
-                key="financial_water_per_m2_L", disabled=disabled)
+                "Water volume per m² (L)", min_value=0.0,
+                key="financial_water_per_m2_L", disabled=disabled,
+                help="Auto-filled from the selected site conditions — edit "
+                     "directly to override.")
 
         c1, c2 = st.columns(2)
         with c1:
