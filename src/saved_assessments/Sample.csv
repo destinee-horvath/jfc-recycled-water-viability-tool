@@ -2,6 +2,8 @@ phase,field,value
 ,assessment_name,Sample
 ,assessed_by,Ben
 ,saved_at,2026-07-24T00:00:00
+financial,potable_distance_km,15.0
+financial,recycled_distance_km,5.0
 supplier_approval,water_source,Treated effluent
 supplier_approval,supplier_authority,Council-run scheme
 supplier_approval,council_approval_held,Yes

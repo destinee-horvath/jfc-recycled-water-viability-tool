@@ -223,9 +223,13 @@ def _road_geometry_section(d):
                 key="financial_road_length_m")
 
         total_width_m = (d["num_lanes"] * d["lane_width_m"]) + (d["num_shoulders"] * d["shoulder_width_m"])
-        st.caption(f"↳ Total road width: **{total_width_m:,.1f} m** "
-                   f"(= {d['num_lanes']:g} lanes × {d['lane_width_m']:g} m "
-                   f"+ {d['num_shoulders']:g} shoulders × {d['shoulder_width_m']:g} m)")
+        lanes_width_m = d["num_lanes"] * d["lane_width_m"]
+        shoulders_width_m = d["num_shoulders"] * d["shoulder_width_m"]
+        st.markdown(
+            f"- Lanes: {d['num_lanes']:g} × {d['lane_width_m']:g} m = **{lanes_width_m:,.1f} m**\n"
+            f"- Shoulders: {d['num_shoulders']:g} × {d['shoulder_width_m']:g} m = **{shoulders_width_m:,.1f} m**\n"
+            f"- Total road width: **{total_width_m:,.1f} m**"
+        )
         return total_width_m
 
 
@@ -557,6 +561,18 @@ def _concrete_mixing_section(d):
                 help="Road elements not covered by the kerb lookup — e.g. "
                      "drainage pits, aprons.",
                 key="financial_additional_concrete_volume_m3", disabled=disabled)
+
+        kerb_volume_per_m = C.CONCRETE_KERB_VOLUME_PER_M.get(d["kerb_type"], 0)
+        water_fraction = C.CONCRETE_WATER_CEMENT_RATIO_TABLE.get(d["water_cement_ratio"], 0)
+        kerb_concrete_volume_m3 = kerb_volume_per_m * d["road_length_m"]
+        concrete_water_kL = (kerb_concrete_volume_m3 + d["additional_concrete_volume_m3"]) * water_fraction
+        st.markdown(
+            f"- Kerb volume: {kerb_volume_per_m:g} m³/m × {d['road_length_m']:,.0f} m road "
+            f"= **{kerb_concrete_volume_m3:,.1f} m³**\n"
+            f"- Water fraction: **{water_fraction:g}**\n"
+            f"- Computed water demand: **{concrete_water_kL:,.1f} kL**"
+        )
+
         if disabled:
             st.caption("Concrete kerb + elements excluded — not counted in the water volume/cost calculation.")
 
