@@ -145,6 +145,7 @@ def page_financial(results):
 def _water_costs_section(d):
     with _persisted_expander("💧 Water Costs", "financial_water_costs_expander"):
         st.info("DISCLAIMER: Refer to official council guidlines and water authority pricing for your region. Prices and conditions during droughts may vary.")
+        st.warning("DISCLAIMER: During drought conditions, councils may restrict or ban the use of potable water for this application entirely. Check current local water restrictions with your council/water authority before relying on potable water as an option.")
 
         d["water_cost_mode"] = st.radio(
             "Input mode", ["Standard", "Custom"],
