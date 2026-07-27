@@ -49,7 +49,7 @@ _LAYER_FIELDS = [
 
 _SCALAR_KEYS = [
     "water_cost_mode", "region", "potable_cost_normal", "potable_cost_drought",
-    "recycled_cost_normal", "drought_savings_custom",
+    "recycled_cost_normal",
     "num_lanes", "lane_width_m", "shoulder_width_m", "num_shoulders", "road_length_m",
     "num_trucks", "hire_rate_per_hr", "fuel_efficiency", "diesel_price",
     "trips_per_truck", "hours_onsite", "truck_capacity_kL",
@@ -165,7 +165,7 @@ def _water_costs_section(d):
                 f"${rates['recycled_cost_normal']:,.2f}/kL."
                 f"confirm with the local water authority/council.")
         else:
-            c1, c2, c3, c4 = st.columns(4)
+            c1, c2, c3 = st.columns(3)
             with c1:
                 d["potable_cost_normal"] = st.number_input(
                     "Cost of potable water ($/kL)", min_value=0.0,
@@ -178,13 +178,6 @@ def _water_costs_section(d):
                 d["recycled_cost_normal"] = st.number_input(
                     "Cost of recycled water ($/kL)", min_value=0.0,
                     value=float(d["recycled_cost_normal"]), key="financial_recycled_cost_normal")
-            with c4:
-                d["drought_savings_custom"] = st.number_input(
-                    "Custom drought savings ($/kL)", min_value=0.0,
-                    value=float(d["drought_savings_custom"]), key="financial_drought_savings_custom",
-                    help="Recorded for the record only — not yet wired into the "
-                         "cost comparison below; the source model does not "
-                         "define how it combines with the drought cost above.")
 
 
 def _pavement_profile_section(d):
@@ -549,7 +542,6 @@ def _input_review(d, total_width_m):
                 ("Potable cost (normal)", f"${d.get('potable_cost_normal', 0):,.2f}/kL"),
                 ("Potable cost (drought)", f"${d.get('potable_cost_drought', 0):,.2f}/kL"),
                 ("Recycled cost (normal)", f"${d.get('recycled_cost_normal', 0):,.2f}/kL"),
-                ("Custom drought savings", f"${d.get('drought_savings_custom', 0):,.2f}/kL"),
             ]
         for name, label in _LAYER_LABELS.items():
             status = "" if d.get(f"layer_{name}_included", True) else " (excluded)"

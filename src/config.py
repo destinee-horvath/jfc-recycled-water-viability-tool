@@ -768,11 +768,6 @@ FINANCIAL_DEFAULTS = {
     "potable_cost_normal": 4.44,         # $/kL — Custom mode only
     "potable_cost_drought": 8.84,        # $/kL — Custom mode only
     "recycled_cost_normal": 2.22,        # $/kL — Custom mode only
-    "drought_savings_custom": 20.00,     # $/kL — Custom mode only; recorded
-                                          # for the record only, not currently
-                                          # consumed by any calculation (how it
-                                          # combines with the other costs is
-                                          # undefined).
 
     # --- Section 2: Pavement profile (per layer) ---
     # "included" (default True) lets the engineer exclude a layer that
@@ -919,6 +914,7 @@ SYDNEY_WATER_TECH_SPEC_URL = (
 FHWA_NHI_06_088_URL = "https://www.fhwa.dot.gov/engineering/geotech/pubs/nhi06088.pdf"
 USDA_HANDBOOK_60_URL = "https://www.ars.usda.gov/ARSUserFiles/20360500/hb60_pdf/hb60intro.pdf"
 EPA_ACT_1979_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1979-203"
+NSW_HEALTH_URL = "https://www.health.nsw.gov.au/environment/water/Pages/wastewater.aspx"
 
 
 def _cited(text: str, *links: tuple[str, str]) -> str:
@@ -972,10 +968,12 @@ def all_regulation_refs():
                  _cited(WHS_REF, ("WHS Act 2011", WHS2011_URL), ("WHS Regulation 2017", WHSREG2017_URL))))
     refs.append((f"{dn['whs']} — WHS: buffer zone",
                  _cited(AGWR_BUFFER_ZONE_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
-    refs.append((f"{dn['whs']} — WHS: buffer zone limitation", AGWR_BUFFER_ZONE_LIMITATION_NOTE))
+    refs.append((f"{dn['whs']} — WHS: buffer zone limitation",
+                 _cited(AGWR_BUFFER_ZONE_LIMITATION_NOTE, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: water class vs contact risk",
                  _cited(WATER_CLASS_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
-    refs.append((f"{dn['whs']} — WHS: NSW Health", NSW_HEALTH_NOTE))
+    refs.append((f"{dn['whs']} — WHS: NSW Health",
+                 _cited(NSW_HEALTH_NOTE, ("NSW Health — Wastewater management and water recycling", NSW_HEALTH_URL))))
     refs.append((f"{dn['financial']} — financial", FINANCIAL_REF))
     return refs
 
@@ -1053,10 +1051,12 @@ def whs_regulation_refs():
                  _cited(WHS_REF, ("WHS Act 2011", WHS2011_URL), ("WHS Regulation 2017", WHSREG2017_URL))))
     refs.append((f"{dn['whs']} — WHS: buffer zone",
                  _cited(AGWR_BUFFER_ZONE_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
-    refs.append((f"{dn['whs']} — WHS: buffer zone limitation", AGWR_BUFFER_ZONE_LIMITATION_NOTE))
+    refs.append((f"{dn['whs']} — WHS: buffer zone limitation",
+                 _cited(AGWR_BUFFER_ZONE_LIMITATION_NOTE, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
     refs.append((f"{dn['whs']} — WHS: water class vs contact risk",
                  _cited(WATER_CLASS_REF, ("AGWR Phase 1 (2006)", AGWR2006_URL))))
-    refs.append((f"{dn['whs']} — WHS: NSW Health", NSW_HEALTH_NOTE))
+    refs.append((f"{dn['whs']} — WHS: NSW Health",
+                 _cited(NSW_HEALTH_NOTE, ("NSW Health — Wastewater management and water recycling", NSW_HEALTH_URL))))
     return refs
 
 

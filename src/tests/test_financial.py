@@ -336,19 +336,6 @@ def test_standard_mode_region_lookup_overrides_default_region():
     assert fa["recycled_cost_normal"] == rates["recycled_cost_normal"]
 
 
-def test_drought_savings_custom_is_recorded_but_not_used_in_totals():
-    """The source model doesn't define a formula for this field — it's
-    stored on the output dict for the record but must not silently affect
-    any total/savings figure."""
-    low = financial_analysis({"water_cost_mode": "Custom", "drought_savings_custom": 0})
-    high = financial_analysis({"water_cost_mode": "Custom", "drought_savings_custom": 999})
-    assert low["drought_savings_custom"] == 0
-    assert high["drought_savings_custom"] == 999
-    for key in ("potable_total_cost", "recycled_total_cost", "potable_drought_total",
-                "savings_normal", "savings_drought", "profit_normal", "loss_normal"):
-        assert low[key] == pytest.approx(high[key]), key
-
-
 # ---------------------------------------------------------------------------
 # Verdict logic — based on the continuous (unrounded) whole-of-project
 # totals, kept specifically for this purpose and the break-even chart.

@@ -31,12 +31,6 @@ model's own rounding. Everything else (volumes, per-day transport costs,
 the break-even chart) stays full precision — the source model doesn't
 round those, and the break-even chart specifically needs continuous values
 to find a crossing point.
-
-One long-standing gap unrelated to the source model: ``drought_savings_custom``
-(Custom water-cost mode) is collected and stored on the input dict for the
-record, but the source model doesn't define how it should be used alongside
-potable_cost_drought / recycled_cost_normal, so it's not consumed by any
-calculation below.
 """
 
 from __future__ import annotations
@@ -108,7 +102,6 @@ def financial_analysis(inp: dict) -> dict:
         potable_cost_normal = float(inp.get("potable_cost_normal", D["potable_cost_normal"]) or 0)
         potable_cost_drought = float(inp.get("potable_cost_drought", D["potable_cost_drought"]) or 0)
         recycled_cost_normal = float(inp.get("recycled_cost_normal", D["recycled_cost_normal"]) or 0)
-    drought_savings_custom = float(inp.get("drought_savings_custom", D["drought_savings_custom"]) or 0)
 
     # --- Pavement profile (§2/§3) ----------------------------------------------
     # Flat per-field keys (layer_<name>_<field>), not a nested dict — inputs
@@ -254,7 +247,6 @@ def financial_analysis(inp: dict) -> dict:
         "potable_cost_normal": potable_cost_normal,
         "potable_cost_drought": potable_cost_drought,
         "recycled_cost_normal": recycled_cost_normal,
-        "drought_savings_custom": drought_savings_custom,
 
         "total_width_m": total_width_m,
         "layer_volumes_kL": layer_volumes_kL,
