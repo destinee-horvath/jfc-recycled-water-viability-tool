@@ -747,7 +747,7 @@ WATER_CLASS_REF = "AGWR Phase 1 (2006) — water quality class framework"
 # pricing. See backend/phases/p7_financial.py.
 # ----------------------------------------------------------------------------
 FINANCIAL_REF = ("Whole-of-life cost comparison vs potable baseline, including "
-                 "trucking. Unfavourable cost is CONDITIONAL only — the client "
+                 "trucking. Unfavourable cost is CONDITIONAL only — the engineer "
                  "may proceed for sustainability / supply-security reasons.")
 
 # Default values for every financial input — starting figures, to be
@@ -784,7 +784,7 @@ FINANCIAL_DEFAULTS = {
 
     # --- Section 4: Transport & operational costs ---
     "num_trucks": 5,
-    "hire_rate_per_hr": 200.0,      # $200/hr = truck + driver only, confirmed with client 2026-07-24 — does not include fuel, which is calculated separately
+    "hire_rate_per_hr": 200.0,      # $200/hr = truck + driver only, verified 2026-07-24 — does not include fuel, which is calculated separately
     "fuel_efficiency": 40.0,        # L/100km
     "diesel_price": 2.00,           # $/L
     "trips_per_truck": 4,
@@ -822,7 +822,7 @@ FINANCIAL_DEFAULTS = {
 }
 
 # Concrete Kerb + Elements' kerb concrete volume per metre of road length
-# (m^3/m). Real client kerb-volume data, not a placeholder.
+# (m^3/m). Real-world kerb-volume data, not a placeholder.
 CONCRETE_KERB_VOLUME_PER_M = {
     "SA (standard residential)": 0.154,
     "SL (standard road)": 0.102,
@@ -839,7 +839,7 @@ CONCRETE_WATER_CEMENT_RATIO_TABLE = {
     0.45: 0.1575,
 }
 
-# Real client region/rate data, not a placeholder.
+# Real-world region/rate data, not a placeholder.
 FINANCIAL_REGIONS = {
     "Sydney":          {"potable_cost_normal": 3.41, "potable_cost_drought": 3.84, "recycled_cost_normal": 3.07},
     "Ballina":         {"potable_cost_normal": 6.82, "potable_cost_drought": 6.82, "recycled_cost_normal": 0.30},
@@ -848,7 +848,7 @@ FINANCIAL_REGIONS = {
     "Dubbo":           {"potable_cost_normal": 2.25, "potable_cost_drought": 6.00, "recycled_cost_normal": 1.45},
 }
 
-# Default average travel speed by area type, real client data.
+# Default average travel speed by area type, real-world reference data.
 AREA_TYPE_SPEEDS = {"Urban (dense city)": 40.0, "Urban": 50.0, "Rural": 60.0}
 
 # Default water volume per m² by site condition (L/m²), and default

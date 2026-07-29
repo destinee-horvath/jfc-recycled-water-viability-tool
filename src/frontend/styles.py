@@ -40,6 +40,23 @@ def inject_css():
         flex:1; text-align:center; padding:8px 4px; border-radius:8px;
         font-size:0.72rem; font-weight:600; border:1px solid #e6e8ee;
       }}
+      .progress-step-v {{
+        display:flex; flex-direction:column; align-items:flex-start;
+        gap:6px; padding:10px 12px; margin-bottom:8px; border-radius:10px;
+        font-size:0.72rem; font-weight:600; background:#fff;
+        border:1px solid #eef0f4; border-left:4px solid var(--accent,#e6e8ee);
+        box-shadow:0 1px 2px rgba(0,0,0,0.04);
+      }}
+      .status-panel-right {{
+        position:fixed; top:4.5rem; right:14px; width:250px;
+        max-height:calc(100vh - 5.5rem); overflow-y:auto;
+        background:#f6f7fa; border:1px solid #e6e8ee; border-radius:16px;
+        padding:16px; z-index:999; box-shadow:0 6px 20px rgba(0,0,0,0.08);
+      }}
+      .status-panel-right h4 {{
+        margin:0 0 12px 0; font-size:0.8rem; color:{COLOUR_PRIMARY};
+        text-transform:uppercase; letter-spacing:.05em;
+      }}
       .phase-actions {{ margin-top:2.2rem; padding-top:0.6rem; }}
       .phase-complete {{
         margin-top:1rem; padding:0.8rem 1rem; border:1px solid {COLOUR_SUCCESS};
@@ -47,6 +64,17 @@ def inject_css():
         border-radius:8px; font-weight:700;
       }}
       .stSidebar .stButton>button {{ width:100%; justify-content:center; }}
+      div[data-testid="stExpander"] {{
+        border-radius:12px !important; border:1px solid #e6e8ee !important;
+        margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);
+      }}
+      div[data-testid="stExpander"] summary {{
+        padding:12px 14px; background:#fafbfc; border-radius:12px;
+      }}
+      div[data-testid="stExpander"] summary:hover {{ background:#eef1f7; }}
+      div[data-testid="stExpander"] summary span[data-testid="stIconMaterial"] {{
+        font-size:1.5rem !important; color:{COLOUR_PRIMARY};
+      }}
       @media (max-width: 640px) {{ .block-container {{ padding:0.6rem; }} }}
 
       div[class*="st-key-financial_generate_graph"] button {{

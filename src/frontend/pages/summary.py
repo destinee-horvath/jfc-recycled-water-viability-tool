@@ -15,6 +15,9 @@ import backend as B
 
 from ..theme import badge
 
+_STATE_ICON = {"PROCEED": "✅", "CONDITIONAL": "⚠️", "REJECT": "⛔", "NA": "➖"}
+_STATE_MD_COLOUR = {"PROCEED": "green", "CONDITIONAL": "orange", "REJECT": "red", "NA": "gray"}
+
 
 def page_summary(results):
     st.header("Summary & readiness")
@@ -38,10 +41,18 @@ def page_summary(results):
 
         if len(selected_phases) > 1:
             for phase in selected_phases:
-                st.markdown(f"### {phase['label']}")
-                c1, c2, c3 = st.columns(3)
-                _readiness_columns(results[phase["id"]].checks, c1, c2, c3)
-                st.divider()
+                r = results[phase["id"]]
+                icon = _STATE_ICON.get(r.state, "➖")
+                colour = _STATE_MD_COLOUR.get(r.state, "gray")
+                # Icon folded into the label text itself, not passed via
+                # st.expander(icon=...) — that built-in slot gets replaced by
+                # Streamlit's own chevron once the expander is open, making
+                # the icon disappear. Embedding it in the label keeps it
+                # sitting right next to the arrow in both states.
+                label = f"{icon} **{phase['label']}**  :{colour}[{r.state}]"
+                with st.expander(label, expanded=False):
+                    c1, c2, c3 = st.columns(3)
+                    _readiness_columns(r.checks, c1, c2, c3)
         else:
             c1, c2, c3 = st.columns(3)
             _readiness_columns(results[selected_phases[0]["id"]].checks, c1, c2, c3)

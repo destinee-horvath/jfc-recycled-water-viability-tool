@@ -5,7 +5,7 @@ Frontend wiring for the "Average travel speed" area-type selector on the
 Financial Feasibility page (frontend/pages/p7_financial.py). Drives the
 real Streamlit widget tree headlessly (streamlit.testing.v1.AppTest).
 
-Regression coverage for a client-reported bug: selecting Urban (dense
+Regression coverage for a reported bug: selecting Urban (dense
 city) / Urban / Rural appeared not to update anything. Root cause was that
 the number_input's `value=` argument is only honoured the first time a
 widget with a given key is created — once `financial_avg_speed_kmh`

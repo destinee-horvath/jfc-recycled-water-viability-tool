@@ -5,7 +5,7 @@ PHASE — Financial Feasibility
 
 Collects inputs across six sections (Water Costs, Pavement Profile, Road
 Geometry, Transport & Operational Costs, Dust Suppression, Concrete Kerb +
-Elements) — all always shown, matching the client's original cost model,
+Elements) — all always shown, matching the original source cost model,
 which has no gate on any of these by Water Quality's selected application
 type. Dust Suppression and Concrete Kerb + Elements each carry their own
 "included" checkbox (same pattern as a pavement layer's) so an engineer can
@@ -26,6 +26,7 @@ import backend as B
 
 from ..state import gi, render_phase_actions
 from ..refdata import PHASE_BY_ID
+from ..pavement_sync import has_pavement_conflict, conflicting_layers, resolve_pavement_conflict
 from ..theme import COLOUR_PRIMARY, COLOUR_SUCCESS, COLOUR_WARNING, COLOUR_NEUTRAL, accounting_amount
 
 def _persisted_expander(label: str, key: str):
@@ -181,6 +182,25 @@ def _water_costs_section(d):
 
 def _pavement_profile_section(d):
     with _persisted_expander("🛣 Pavement Profile", "financial_pavement_profile_expander"):
+        if has_pavement_conflict():
+            names = ", ".join(_LAYER_LABELS[n] for n in conflicting_layers())
+            st.warning(
+                f"Pavement values here and in Soil & Site Conditions have "
+                f"both changed since they last matched, and now disagree "
+                f"for: **{names}**. Pick which side should win — this "
+                "applies to all three layers, not just the ones above.")
+            c1, c2 = st.columns(2)
+            if c1.button("⇥ Use these values everywhere", key="pavement_sync_keep_financial",
+                         width="stretch", help="Push Financial Feasibility's current pavement "
+                         "values to Soil & Site Conditions."):
+                resolve_pavement_conflict("financial")
+                st.rerun()
+            if c2.button("⇤ Pull values from Soil & Site", key="pavement_sync_keep_soil",
+                         width="stretch", help="Overwrite the values below with Soil & Site "
+                         "Conditions' current pavement values."):
+                resolve_pavement_conflict("soil")
+                st.rerun()
+
         for name, label in _LAYER_LABELS.items():
             included_key = f"layer_{name}_included"
             d[included_key] = st.checkbox(
@@ -657,7 +677,7 @@ def _water_savings_line(savings: float, scenario_label: str) -> str:
 # ---------------------------------------------------------------------------
 # "?" tooltip formula breakdowns for the Cost summary metrics below — each
 # mirrors backend.phases.p7_financial's own formula exactly (same terms,
-# same order), substituting this run's real input values, so a client can
+# same order), substituting this run's real input values, so an engineer can
 # see precisely how a number was reached without leaving the page.
 # ---------------------------------------------------------------------------
 

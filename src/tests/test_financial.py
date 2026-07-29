@@ -3,8 +3,8 @@ tests/test_financial.py
 =====================
 PHASE — Financial Feasibility: pavement/dust-suppression/concrete-kerb
 water-volume model and the whole-of-project potable-vs-recycled cost
-comparison built on top of it. Ported term-for-term from the client's
-original cost model, treated as ground truth — see
+comparison built on top of it. Ported term-for-term from the original
+source cost model, treated as ground truth — see
 backend/phases/p7_financial.py's module docstring.
 No REJECT case — an unfavourable cost comparison is CONDITIONAL only,
 never a hard reject; asserted as an invariant below.
@@ -48,8 +48,8 @@ def test_defaults_water_cost_mode_is_standard_port_macquarie():
     assert fa["recycled_cost_normal"] == rates["recycled_cost_normal"]
 
 
-def test_region_table_matches_client_reference_data():
-    """Real client region/rate lookup data — ground truth, not a
+def test_region_table_matches_reference_data():
+    """Real region/rate lookup data — ground truth, not a
     placeholder."""
     expected = {
         "Sydney":         (3.41, 3.84, 3.07),
@@ -65,14 +65,14 @@ def test_region_table_matches_client_reference_data():
         assert fa["recycled_cost_normal"] == pytest.approx(recycled), region
 
 
-def test_area_type_speeds_match_client_reference_data():
-    """Real client default-speed lookup data, keyed off area type."""
+def test_area_type_speeds_match_reference_data():
+    """Real default-speed lookup data, keyed off area type."""
     assert C.AREA_TYPE_SPEEDS["Urban (dense city)"] == pytest.approx(40.0)
     assert C.AREA_TYPE_SPEEDS["Urban"] == pytest.approx(50.0)
     assert C.AREA_TYPE_SPEEDS["Rural"] == pytest.approx(60.0)
 
 
-def test_defaults_transport_matches_client_source_formula():
+def test_defaults_transport_matches_source_formula():
     fa = financial_analysis({})
     # volume_per_day_kL = 5 trucks * 4 trips * 15 kL = 300
     assert fa["volume_per_day_kL"] == pytest.approx(300.0)
@@ -163,7 +163,7 @@ def test_concrete_mixing_kerb_type_lookup():
     assert fa_sl["kerb_concrete_volume_m3"] == pytest.approx(102.0)   # 0.102 * 1000
 
 
-def test_concrete_mixing_water_cement_ratio_table_matches_client_reference_data():
+def test_concrete_mixing_water_cement_ratio_table_matches_reference_data():
     """The 0.38 entry is 0.133 — corrected from a typo in the original
     source data, which read 13.3."""
     for ratio, fraction in C.CONCRETE_WATER_CEMENT_RATIO_TABLE.items():

@@ -15,7 +15,8 @@ import backend as B
 
 from .styles import inject_css
 from .state import init_state, current_results, reset_widget_state, autosave_progress
-from .components import progress_bar
+from .components import progress_bar, right_status_panel_html
+from .pavement_sync import sync_pavement_profile
 from .refdata import get_reference_data, PHASE_BY_ID
 from .theme import badge
 from .pages import PAGE_FUNCS, page_setup, page_summary, page_compare, page_save_export
@@ -40,6 +41,10 @@ def _nav_button(label):
                  width="stretch"):
         st.session_state.page = label
         st.rerun()
+
+
+def _current_phase_id():
+    return next((p["id"] for p in C.PHASES if p["label"] == st.session_state.page), None)
 
 
 def _section_for_phase(phase_id):
@@ -106,6 +111,13 @@ def sidebar():
 def main():
     init_state()
     inject_css()
+
+    page = st.session_state.page
+    current_phase_id = _current_phase_id()
+    # Must run before the page-routing block below — pushing a synced value
+    # into a phase's widgets is only safe before that phase's own widgets
+    # are instantiated in this run (see pavement_sync.py's docstring).
+    sync_pavement_profile()
     sidebar()
 
     if "_save_toast" in st.session_state:
@@ -114,8 +126,6 @@ def main():
     st.markdown(f'<div class="disclaimer">! {C.DISCLAIMER}</div>',
                 unsafe_allow_html=True)
 
-    page = st.session_state.page
-    current_phase_id = next((p["id"] for p in C.PHASES if p["label"] == page), None)
     section = (_section_for_phase(current_phase_id)
                if C.USE_GROUPED_SECTIONS and current_phase_id else None)
 
@@ -123,9 +133,17 @@ def main():
     # them in with fresh results AFTER the page below has run — the page is
     # what writes this run's just-changed widget values into
     # st.session_state.inputs, so computing results before it runs would
-    # show last run's (stale) state.
+    # show last run's (stale) state. On phase pages the status strip is a
+    # fixed panel docked to the right of the viewport (right_panel_slot,
+    # independently scrollable) instead of the inline top-of-page strip —
+    # Summary shows neither, since it already has its own "Phase outcomes"
+    # recap further down the page, and Save & Export shows neither either,
+    # so its "Save & export" block (shared with the bottom of Summary via
+    # summary.save_export_block) presents identically in both places.
+    no_strip_pages = ("Summary", "Save & Export")
     section_slot = st.empty() if section else None
-    progress_slot = st.empty()
+    inline_progress_slot = st.empty() if (not current_phase_id and page not in no_strip_pages) else None
+    right_panel_slot = st.empty() if current_phase_id else None
     st.write("")
 
     if page == "Setup":
@@ -148,8 +166,13 @@ def main():
         with section_slot.container():
             st.markdown(_section_banner_html(section, current_results()), unsafe_allow_html=True)
 
-    with progress_slot.container():
-        progress_bar(current_results())
+    if inline_progress_slot is not None:
+        with inline_progress_slot.container():
+            progress_bar(current_results())
+
+    if right_panel_slot is not None:
+        with right_panel_slot.container():
+            st.markdown(right_status_panel_html(current_results()), unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

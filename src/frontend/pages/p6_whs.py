@@ -27,40 +27,47 @@ def page_whs(results):
             "no intention needed to prove guilt.")
 
     st.subheader("Application method & contact risk", help=C.WHS_REF)
+
+    _current_method = st.session_state.get(
+        "whs_application_method", d.get("application_method", C.APPLICATION_METHODS[0]))
     d["application_method"] = st.radio(
         "How is the water applied?", C.APPLICATION_METHODS,
         index=C.APPLICATION_METHODS.index(
             d.get("application_method", C.APPLICATION_METHODS[0])),
+        help=C.WHS_METHOD_NOTES.get(_current_method),
         key="whs_application_method")
     if d["application_method"] == "Sprayed (higher contact)":
         d["wind_weather_checked"] = st.checkbox(
             "Wind conditions and weather have been checked before application",
             value=bool(d.get("wind_weather_checked")),
             help=C.WHS_SPRAY_WEATHER_REF, key="whs_wind_weather_checked")
-    else:
-        st.caption("ℹ", help=C.WHS_METHOD_NOTES[d["application_method"]])
 
+    _CONTACT_RISK_HELP = {
+        "Workers only": "Moderate risk — ensure PPE and SWMS cover all direct-contact scenarios.",
+        "None expected": C.WHS_IRRIGATION_NOTE,
+    }
+    _current_contact_risk = st.session_state.get(
+        "whs_contact_risk", d.get("contact_risk", C.CONTACT_RISK_LEVELS[0]))
     d["contact_risk"] = st.radio(
         "Will workers or the public contact the treated area during/after application?",
         C.CONTACT_RISK_LEVELS,
         index=C.CONTACT_RISK_LEVELS.index(
             d.get("contact_risk", C.CONTACT_RISK_LEVELS[0])),
+        help=_CONTACT_RISK_HELP.get(_current_contact_risk),
         key="whs_contact_risk")
-    if d["contact_risk"] == "Workers only":
-        st.caption("ℹ", help="Moderate risk — ensure PPE and SWMS cover all direct-contact scenarios.")
-    elif d["contact_risk"] != "None expected":
+    # "Workers and public" gets a standing warning box, not just a hover
+    # tooltip — kept visible rather than folded into help= above.
+    if d["contact_risk"] not in ("Workers only", "None expected"):
         st.warning(f"{C.WHS_TREATMENT_NOTE}\n\n{C.NSW_HEALTH_NOTE}")
-    else:
-        st.caption("ℹ", help=C.WHS_IRRIGATION_NOTE)
 
     st.subheader("WHS checklist")
-    st.info(
-        "Field note: Workers commonly assess material moisture content by "
+    st.warning(
+        "Field note: Workers commonly assess material moisture content by " 
         "squeezing material in hand and observing texture and behaviour. "
-        "Where recycled water is used, the material may feel or behave "
-        "differently compared to potable water. Ensure workers are briefed "
-        "on this and that any unusual observations are reported to the "
-        "site supervisor.")
+        "Where the water source is unknown or recycled, do "
+        "not handle material without the correct PPE — doing so risks a "
+        "WHS breach. Report any uncertainty about water source to the site "
+        "supervisor.")
     for key, label in C.WHS_CHECKS:
         d[key] = st.checkbox(label, value=bool(d.get(key)), key=f"whs_{key}")
 

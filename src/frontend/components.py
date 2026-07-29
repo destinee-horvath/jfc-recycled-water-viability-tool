@@ -28,6 +28,36 @@ def progress_bar(results):
         )
 
 
+def right_status_panel_html(results) -> str:
+    """Same phase-status data as progress_bar(), rendered as a fixed panel
+    docked to the right edge of the viewport with its own scrollbar
+    (.status-panel-right, styles.py) — independent of the main content's
+    scroll position, so it stays visible on long phase pages without
+    competing for scroll with the left nav sidebar. Plain HTML (no
+    Streamlit widgets), since a position:fixed element can't usefully host
+    interactive widgets. Used only on phase pages (see app.py's main())."""
+    rows = []
+    for phase in C.PHASES:
+        r = results.get(phase["id"])
+        colour = C.STATE_COLOURS.get(r.state, COLOUR_NEUTRAL) if r else COLOUR_NEUTRAL
+        active = " ●" if st.session_state.page == phase["label"] else ""
+        state_badge = badge(r.state) if r else badge("NA", "—")
+        rows.append(
+            f'<div class="progress-step-v" style="--accent:{colour}">'
+            f'<span>{phase["label"]}{active}</span>{state_badge}</div>'
+        )
+    return (
+        # Scoped here (not in inject_css()) so the extra right padding only
+        # applies on the runs that actually render the panel — other pages
+        # keep the main content at full width.
+        '<style>.block-container{padding-right:310px !important;}</style>'
+        '<div class="status-panel-right">'
+        '<h4>Phase status</h4>'
+        + "".join(rows) +
+        '</div>'
+    )
+
+
 def opt_num(label, phase_id, key, help=None, default_measured=False):
     """Optional measurement: a Measured/Not measured toggle + non-negative value.
 

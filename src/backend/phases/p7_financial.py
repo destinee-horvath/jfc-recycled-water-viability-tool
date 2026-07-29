@@ -3,7 +3,7 @@ backend/phases/p7_financial.py
 ========================
 PHASE — FINANCIAL FEASIBILITY (never a hard reject)
 
-Ported term-for-term from the client's original cost model — treated as
+Ported term-for-term from the original source cost model — treated as
 ground truth. Quirks in the source model that look like bugs are
 implemented literally, not "corrected" — each is flagged with a comment at
 the point it's implemented.
@@ -415,7 +415,7 @@ def assess_financial(inp: dict, ctx: dict = None) -> PhaseResult:
         g.checks.append(CheckResult(
             "Total project cost comparison", "CONDITIONAL", C.FINANCIAL_REF,
             detail + " Recycled water is not cost favourable under any "
-            "conditions modelled — the client may still proceed for "
+            "conditions modelled — the engineer may still proceed for "
             "sustainability / supply-security reasons."))
 
     g.rollup()
