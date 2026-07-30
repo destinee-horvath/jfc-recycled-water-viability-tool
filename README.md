@@ -1,5 +1,7 @@
 # Recycled Water Viability Assessment Tool
 
+🔗 **Live app:** [jfc-recycled-water-viability-tool.streamlit.app](https://jfc-recycled-water-viability-tool.streamlit.app/)
+
 A web-based decision-support tool that screens whether a recycled water source
 is viable for a given roadworks application under NSW legislation and IPWEA
 guidelines. It guides practitioners through **seven assessment phases** -
@@ -18,6 +20,15 @@ sees exactly what's confirmed and what still needs action.
 
 ## What the tool covers
 
+Phases are numbered 1-7 below to match the source file naming
+(`p1_supplier_approval.py` … `p7_financial.py`) and the underlying
+regulatory logic - but in the running app's sidebar, **Financial
+Feasibility (Phase 7) is shown first**, ahead of the six
+compliance/risk phases, so an engineer can gauge cost viability
+before working through the rest. All seven are always accessible in
+any order regardless of display position - this is a checklist, not a
+sequential gate.
+
 ### Phase 1 - Supplier & Dual Approval *(mandatory)*
 Verifies that **both** the supplier's statutory approval and the user's own
 approval to use the water are in place. Every gate is a strict pass/reject
@@ -35,7 +46,17 @@ permitted (REJECT), and Unconfirmed (CONDITIONAL) - and defaults to
 Unconfirmed so the engineer isn't forced into a decision before checking
 their documents.
 
-### Phase 2 - Water Quality
+### Phase 2 - Recycled Water Management Plan *(mandatory)*
+Confirms that the supplier holds an approved RWMP, that it explicitly covers
+this roadworks use, that all **12 elements** of the NSW RWMS framework (NSW
+Office of Water, May 2015) are met, and that it's current. No public RWMP
+register exists, so the tool generates a pre-filled letter the engineer can
+send the supplier requesting written confirmation. **Never a hard REJECT** -
+every shortfall here (including a missing RWMP) is flagged **CONDITIONAL**,
+since it's treated as something the supplier needs to confirm in writing,
+not something the tool itself can independently verify.
+
+### Phase 3 - Water Quality
 Each roadworks application is assessed against its own hard specification
 table - no generic case-by-case screen:
 - **Concrete Mixing** - AS 1379 Table 2.1 (compressive strength ≥ 90% of a
@@ -50,14 +71,9 @@ table - no generic case-by-case screen:
   Recycled): sugar, oil & grease, pH, TDS, chloride, sulphate, alkali, TSS.
 
 The intended AGWR water class (A–D) is still selected here as a general
-field - Phase 6 cross-checks it against the WHS contact-risk level.
-
-### Phase 3 - Recycled Water Management Plan *(mandatory)*
-Confirms that an approved RWMP is in place and lists compaction/subgrade
-moisture preparation as an approved end use - either gate missing is a hard
-**REJECT**. Coverage of all **12 elements** of the NSW RWMS framework (NSW
-Office of Water, May 2015) and RWMP currency are shortfalls only - flagged
-**CONDITIONAL**, never a hard reject.
+field - Phase 6 cross-checks it against the WHS contact-risk level. This is
+one of only two phases (along with Phase 1) capable of a hard REJECT - a
+measured value outside its limit fails that parameter outright.
 
 ### Phase 4 - Site Runoff & EPL Risk
 Screens the site against POEO Act 1997 obligations. **No hard reject at this
@@ -75,7 +91,7 @@ Flags conditions that trigger verification testing rather than auto-rejecting:
 - Soil classification (clay, sandy, granular, mixed) with reactivity guidance.
 - Slope gradient and elevation variability.
 - Proximity to sensitive environments.
-- pH/SAR/EC soil-suitability triggers - shown when Phase 2's application is
+- pH/SAR/EC soil-suitability triggers - shown when Phase 3's application is
   Earthworks (Compaction), where moisture content most directly affects
   compaction outcomes - driving an **Optimum Moisture Content (OMC)** testing
   flag where salinity or SAR is elevated (testing must use the actual
@@ -88,16 +104,19 @@ commence. It's a strict-liability regime (no hard reject - shortfalls return
 - Application method (direct vs. sprayed) - spraying requires a pre-application
   wind/weather check.
 - Human-contact risk level (none / workers only / workers and public).
-- Proximity (within 50 m) to houses, schools, playing fields, roads, public
-  open space, or water bodies - spray buffer zone.
-- The Phase 2 water class must meet a minimum standard for the contact-risk
+- Indicative spray buffer-zone range to sensitive receptors (houses, schools,
+  playing fields, roads, public open space, water bodies) - 25-100 m
+  depending on the Phase 3 AGWR water class, always flagged **CONDITIONAL**
+  pending NSW Health confirmation (no source maps a distance directly to
+  AGWR class).
+- The Phase 3 water class must meet a minimum standard for the contact-risk
   level (None: any class; Workers only: Class B or better; Workers and
   public: Class A).
 - Worker notification, health-risk communication, PPE, SWMS, and signage.
 
 ### Phase 7 - Financial Feasibility
 Whole-of-project water cost comparison, ported cell-for-cell from the
-client's own Excel costing model (treated as ground truth):
+original source Excel costing model (treated as ground truth):
 - Combined water volume across pavement moisture conditioning, dust
   suppression, and concrete kerb/elements - always summed together.
 - Water cost and transport cost (truck fleet, trips, distance) compared
@@ -127,7 +146,7 @@ framework in Phase 1 does not apply to it).
 
 | Feature | Detail |
 |---|---|
-| Phase progress indicator | Colour-coded bar across all phases |
+| Phase status at a glance | Colour-coded strip (Setup/Compare) or a floating side panel (phase pages) showing every phase's current state |
 | Colour-coded outcomes | PROCEED (green) · CONDITIONAL (amber) · REJECT (red) at check and phase level |
 | Save & load | Assessments saved as re-importable CSV with a timestamp and "Assessed by" field |
 | PDF Readiness Summary | One-page export listing confirmed items, pending actions, and blockers |
@@ -157,7 +176,6 @@ cd jfc-recycled-water-viability-tool/src
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 
-
 # 3. Launch the app
 streamlit run streamlit_app.py
 ```
@@ -173,7 +191,9 @@ directory and persist between sessions.
 
 ### Streamlit Community Cloud (demo / review)
 
-1. Push the `src/` folder contents to a GitHub repository.
+1. Push the `src/` folder contents to a GitHub repository - this is how the
+   [live demo](https://jfc-recycled-water-viability-tool.streamlit.app/) is
+   deployed.
 2. Sign in at [share.streamlit.io](https://share.streamlit.io) and create a new
    app pointing to the repository; `streamlit_app.py` is detected automatically.
 3. Streamlit installs `requirements.txt` on each deploy.
@@ -219,8 +239,10 @@ src/
 │   ├── refdata.py             # Cached static reference data (regs, RWMS, phase lookup)
 │   ├── state.py                # Session-state init + phase Next/Save actions
 │   ├── components.py           # Shared widgets: progress bar, validated inputs, result card
+│   ├── pavement_sync.py         # Two-way sync of shared pavement-layer data between
+│   │                             # Financial Feasibility and Soil & Site Conditions
 │   └── pages/                   # One module per page + the PAGE_FUNCS registry
-│       ├── setup.py, summary.py, compare.py
+│       ├── setup.py, summary.py, compare.py, save_export.py
 │       └── p1_supplier_approval.py … p7_financial.py
 │
 └── backend/
