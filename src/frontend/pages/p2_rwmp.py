@@ -23,12 +23,9 @@ _END_USE_FALLBACK = ("the intended roadworks application (e.g. compaction, "
 
 
 def _rwmp_request_letter() -> str:
-    """Plain-text supplier-confirmation letter (FR2.5), pre-filled from
-    whatever's already entered in Setup/Phase 1/Phase 3 — added because no
-    public RWMP register exists for the user to check this themselves
-    (config.RWMP_LOOKUP_NOTE), so direct supplier confirmation is the only
-    path. Requests confirmation of exactly the four things this phase
-    assesses (FR2.1-FR2.4), nothing more."""
+    """Supplier-confirmation letter (FR2.5), pre-filled from Setup/Phase 1/
+    Phase 3. No public RWMP register exists, so this is the only way to
+    confirm the four things this phase assesses (FR2.1-FR2.4)."""
     meta = st.session_state.meta
     supplier = st.session_state.inputs.get("supplier_approval", {})
     water_quality = st.session_state.inputs.get("water_quality", {})
@@ -114,11 +111,9 @@ def page_rwmp(results):
              "responsibility; obtain written confirmation from the "
              "supplier that this has been done.",
         key="rwmp_rwmp_12_elements_confirmed")
-    # Read from the checkbox widgets' own session_state entries, not d — a
-    # click updates st.session_state[key] before this script reruns from
-    # the top, but d[key] isn't written until the loop below executes the
-    # checkbox() calls, which happens after this line. Reading d here would
-    # make the count lag one click behind whatever was just ticked.
+    # Read from the checkboxes' own session_state, not d — d[key] isn't
+    # written until the loop below runs, so reading d here would lag one
+    # click behind whatever was just ticked.
     def _rwms_checked(key):
         widget_key = f"rwmp_{key}"
         if widget_key in st.session_state:
@@ -128,9 +123,7 @@ def page_rwmp(results):
     checked = sum(1 for i in range(1, len(REF["rwms"]) + 1)
                   if _rwms_checked(f"rwms_el_{i}_checked"))
     # key= binds open/closed state to session_state so ticking a checkbox
-    # inside (which triggers a rerun) doesn't snap the expander shut again —
-    # a bare `expanded=False` literal is re-evaluated on every rerun and
-    # would otherwise force it closed after every click.
+    # inside (which triggers a rerun) doesn't snap the expander shut again.
     expander_key = "rwmp_rwms_expander"
     st.session_state.setdefault(expander_key, False)
     with st.expander(f"Reference: the 12 RWMS elements — personal checklist "

@@ -3,16 +3,8 @@ backend/phases/p2_rwmp.py
 ========================
 PHASE 2 — RWMP (Recycled Water Management Plan)
 
-Never a hard reject: checks 1-2 (RWMP exists / covers this end use) return
-CONDITIONAL rather than REJECT when missing, since an RWMP can be obtained
-or amended before works commence — mirroring the Phase 1 dual-approval
-reasoning. This is a deliberate design choice, not an oversight — see the
-SRS's "Known Limitations" note. Their CONDITIONAL detail text still warns
-this should be treated with the same seriousness as a hard reject.
-
-Check 3 (12-element compliance) is a supplier written-confirmation flag, not
-an engineer element-by-element audit — DCCEEW already assesses RWMP
-compliance with the 12 elements as part of s.60 approval.
+Checks 1-2 are deliberately CONDITIONAL, not REJECT, when missing — an RWMP
+can be obtained/amended before works commence (see SRS "Known Limitations").
 """
 
 from __future__ import annotations
@@ -64,9 +56,7 @@ def assess_rwmp(inp: dict, ctx: dict = None) -> PhaseResult:
         ))
 
     # --- Check 3: supplier written confirmation of 12-element RWMS compliance.
-    # DCCEEW already assesses this against the 12 elements as part of s.60
-    # approval, so the engineer's role is to obtain the supplier's written
-    # confirmation, not to independently audit the RWMP element-by-element. ---
+    # DCCEEW already audits this under s.60 — engineer just needs written confirmation. ---
     label = ("Supplier has confirmed in writing that their approved RWMP "
              "complies with all 12 RWMS elements")
     if inp.get("rwmp_12_elements_confirmed"):

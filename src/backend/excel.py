@@ -1,14 +1,11 @@
 """
 backend/excel.py
 ==================
-COLOUR-CODED EXCEL (.xlsx) EXPORT — a human-readable companion to the plain
-CSV export (persistence.py), for opening/printing/sharing rather than
-re-importing. The CSV remains the machine-readable, re-importable format
-used by "Load selected" / "Load uploaded"; this file is display-only.
+Colour-coded .xlsx export — a display-only companion to the CSV export
+(persistence.py), which remains the re-importable format.
 
 Two sheets: "Readiness Summary" (colour-coded per-check states) and, when
-raw inputs are supplied, "Assessment Inputs" (Phase | Field | Value — a
-readable mirror of the CSV's own phase/field/value columns).
+raw inputs are supplied, "Assessment Inputs" (Phase | Field | Value).
 """
 
 from __future__ import annotations
@@ -29,8 +26,7 @@ def _hex(colour: str) -> str:
 
 
 def _tint(colour: str, amount: float = 0.78) -> str:
-    """Blend a hex colour toward white for a pastel row fill (readable text,
-    still colour-coded). ``amount`` is the fraction of white blended in."""
+    """Blend a hex colour toward white for a pastel, still-legible row fill."""
     h = _hex(colour)
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     r = round(r + (255 - r) * amount)
@@ -41,17 +37,10 @@ def _tint(colour: str, amount: float = 0.78) -> str:
 
 def build_xlsx(meta: dict, results: dict[str, PhaseResult], readiness: dict,
                 inputs: dict[str, dict] | None = None) -> bytes:
-    """
-    Build a colour-coded Readiness Summary workbook: one banner row per
-    phase (filled with that phase's PROCEED/CONDITIONAL/REJECT/NA colour)
-    followed by one row per check (filled with that check's own state
-    colour, so a REJECT check stands out even inside an otherwise
-    CONDITIONAL phase). No headline verdict/score by design — just the
-    blocking/pending/confirmed breakdown.
-
-    If ``inputs`` (the raw {phase: {field: value}} dict) is supplied, a
-    second "Assessment Inputs" sheet is added — see module docstring.
-    """
+    """Build a colour-coded Readiness Summary workbook: one banner row per
+    phase, then one row per check in that check's own state colour (so a
+    REJECT stands out even inside an otherwise CONDITIONAL phase). Adds an
+    "Assessment Inputs" sheet if ``inputs`` is supplied."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -182,8 +171,7 @@ def build_xlsx(meta: dict, results: dict[str, PhaseResult], readiness: dict,
 
 
 def _add_inputs_sheet(wb, inputs: dict[str, dict]) -> None:
-    """Readable Phase | Field | Value dump of every raw input — display-only
-    companion to the CSV's own phase/field/value columns (persistence.py)."""
+    """Readable Phase | Field | Value dump of every raw input."""
     from openpyxl.styles import Font, PatternFill, Border, Side
 
     ws = wb.create_sheet("Assessment Inputs")

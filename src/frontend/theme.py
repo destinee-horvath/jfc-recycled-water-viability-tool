@@ -1,9 +1,5 @@
-"""
-frontend/theme.py
-==================
-Colour constants (mirrors config.py — single source is config) and the
-badge() renderer shared by every page.
-"""
+"""frontend/theme.py — colour constants (mirrors config.py, which is the
+single source) and the badge() renderer shared by every page."""
 
 import config as C
 
@@ -22,15 +18,12 @@ def badge(state: str, text: str = None) -> str:
 
 
 def accounting_amount(value: float, favourable: bool) -> str:
-    """Accounting-style money formatting for a signed comparison figure:
-    an unfavourable amount renders in red with parentheses (e.g. ($1,234)),
-    matching the convention finance teams use so the reader never has to
-    parse a leading minus sign or mentally re-sign the number themselves.
-    ``favourable`` must be passed explicitly by the caller rather than
-    inferred from ``value``'s own sign — which direction counts as
-    "favourable" depends on what the figure represents (e.g. a positive
-    water-cost saving is favourable, but a positive transport-cost
-    *difference* is not)."""
+    """Accounting-style formatting: unfavourable renders red with
+    parentheses (e.g. ($1,234)) instead of a minus sign. ``favourable``
+    must be passed explicitly, not inferred from ``value``'s sign — what
+    counts as favourable depends on what the figure represents (e.g. a
+    positive water-cost saving is favourable, a positive transport-cost
+    difference is not)."""
     magnitude = f"${abs(value):,.0f}"
     if favourable:
         return f'<span style="color:{COLOUR_SUCCESS};font-weight:700">{magnitude}</span>'

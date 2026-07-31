@@ -90,8 +90,8 @@ def test_compare_button_enabled_after_both_lookups_succeed():
 
 
 def test_compare_button_toggles_without_any_further_ors_calls():
-    """Clicking Compare must render from what's already in session_state —
-    no additional requests.get/post calls once both lookups are stored."""
+    """Renders from session_state — no further requests.get/post calls
+    once both lookups are stored."""
     at = _financial_app()
     _run_lookup(at, "potable", (152.9, -31.4), (152.8, -31.1), _directions())
     _run_lookup(at, "recycled", (152.7, -31.5), (152.6, -31.2), _directions())
@@ -145,8 +145,8 @@ def test_no_crash_when_recycled_geometry_key_is_missing_entirely():
 
 
 def test_no_crash_when_comparing_one_good_and_one_malformed_route():
-    """The core degrade-gracefully case: compare view renders both maps
-    together even though only one of the two has usable geometry."""
+    """Compare view renders both maps even though only one route has
+    usable geometry."""
     at = _financial_app()
     _run_lookup(at, "potable", (152.9, -31.4), (152.8, -31.1), _directions())
     _run_lookup(at, "recycled", (152.7, -31.5), (152.6, -31.2),
@@ -173,8 +173,8 @@ def test_clear_error_shown_when_geocoding_finds_no_match():
 
 
 def test_manual_distance_entry_still_works_when_ors_lookup_never_run():
-    """The manual number_input is always the fallback — untouched by the
-    address-lookup feature until a lookup actually succeeds."""
+    """Manual number_input is the fallback, untouched until a lookup
+    actually succeeds."""
     at = _financial_app()
     at.number_input(key="financial_potable_distance_km").set_value(77.0).run()
     assert not at.exception, at.exception

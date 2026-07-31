@@ -4,17 +4,14 @@ tests/test_supplier_approval.py
 PHASE 1 — Supplier & Dual Approval: REJECT / CONDITIONAL / PROCEED coverage.
 
 Hard gates (REJECT): historic operation without approval, council/authority
-"No", and the discharge-point trap — none of these is obtainable after the
-fact, so none is remediable by "confirm it later". Private scheme (s.68
+"No", and the discharge-point trap — none obtainable after the fact, so
+none remediable by "confirm it later". Private scheme (s.68
 greywater/blackwater) is not covered — not a credible pathway for recycled
 water at roadworks scale; only council-run and water-authority supplier
-types remain, plus stormwater's own pathway. Dual approval "Not
-permitted" is CONDITIONAL, not REJECT: the user
-can vary their EPL or obtain development consent before works commence, so
-it's remediable, unlike the supplier-side pre-existing ministerial approvals.
-Stormwater's own approval pathway (s.68/development consent/WMA 2000) is
-likewise always CONDITIONAL when not held, never REJECT, for the same
-obtainable-later reason.
+types remain, plus stormwater's own pathway. Dual approval "Not permitted"
+and stormwater's own pathway (s.68/development consent/WMA 2000) are
+CONDITIONAL, not REJECT: both are obtainable before works commence, unlike
+the supplier-side pre-existing ministerial approvals.
 """
 
 import config as C
@@ -40,8 +37,8 @@ def test_reject_when_operated_without_approval():
 
 
 def test_historic_reject_overrides_and_stops_all_other_checks():
-    """Even with council approval also missing, the historic check
-    short-circuits — only one check should ever be recorded."""
+    """The historic check short-circuits even with council approval also
+    missing — only one check should ever be recorded."""
     inp = dict(VALID, operated_without_approval=True,
                council_approval_held="No", user_approval_state="Not permitted for this use")
     r = assess_supplier_approval(inp)
@@ -62,8 +59,7 @@ def test_conditional_when_council_approval_unconfirmed():
 
 
 def test_conditional_when_user_not_permitted():
-    """Not permitted is CONDITIONAL, not REJECT — the user can vary their EPL
-    or obtain development consent before works commence."""
+    """Obtainable before works commence, so CONDITIONAL not REJECT."""
     inp = dict(VALID, user_approval_state="Not permitted for this use")
     r = assess_supplier_approval(inp)
     assert r.state == "CONDITIONAL"
@@ -76,8 +72,8 @@ def test_conditional_when_user_approval_unconfirmed():
 
 
 def test_conditional_by_default_when_user_approval_not_specified():
-    """"Unconfirmed" is the default (last item in USER_APPROVAL_STATES) so the
-    engineer isn't forced into a binary choice before checking their documents."""
+    """"Unconfirmed" is the default (last item in USER_APPROVAL_STATES) —
+    engineer isn't forced into a binary choice before checking documents."""
     inp = {k: v for k, v in VALID.items() if k != "user_approval_state"}
     r = assess_supplier_approval(inp)
     assert r.state == "CONDITIONAL"
@@ -90,8 +86,8 @@ def test_reject_on_discharge_only_trap_for_treated_effluent():
 
 
 def test_reject_on_discharge_only_trap_for_other_source():
-    """Unlike the old design, the discharge trap now also applies to 'Other'
-    sources, not just Treated effluent."""
+    """The discharge trap also applies to 'Other' sources, not just
+    Treated effluent."""
     inp = dict(VALID, water_source="Other", discharge_only=True)
     r = assess_supplier_approval(inp)
     assert r.state == "REJECT"
@@ -101,8 +97,8 @@ def test_reject_on_discharge_only_trap_for_other_source():
 # Stormwater pathway
 # ---------------------------------------------------------------------------
 def test_conditional_for_stormwater_without_alternative_approval():
-    """Stormwater's own approval pathway is CONDITIONAL, not REJECT, when
-    not held — s.68/development consent/WMA 2000 approvals are obtainable."""
+    """CONDITIONAL not REJECT — s.68/development consent/WMA 2000
+    approvals are obtainable later."""
     inp = dict(VALID, water_source="Stormwater", stormwater_approvals_held="No")
     r = assess_supplier_approval(inp)
     assert r.state == "CONDITIONAL"
@@ -121,9 +117,8 @@ def test_proceed_for_stormwater_with_alternative_approval():
 
 
 def test_proceed_for_stormwater_in_sydney_hunter_area_regardless_of_approvals():
-    """In Sydney/Hunter Water operational areas, s.68 LGA doesn't apply at
-    all — the Sydney/Hunter check short-circuits the stormwater approvals
-    check entirely."""
+    """In Sydney/Hunter Water areas s.68 LGA doesn't apply — this check
+    short-circuits the stormwater approvals check entirely."""
     inp = dict(VALID, water_source="Stormwater", sydney_hunter_area=True,
                stormwater_approvals_held="No")
     r = assess_supplier_approval(inp)
@@ -169,9 +164,8 @@ def test_conditional_when_water_supply_authority_approval_unconfirmed():
 
 
 def test_private_scheme_removed_from_supplier_authorities():
-    """s.68 private-scheme approvals are for small-scale septic systems,
-    not a credible pathway for recycled water at roadworks scale. Only
-    council-run and water-authority schemes remain."""
+    """s.68 private-scheme approvals are for small-scale septic systems —
+    not a credible pathway for recycled water at roadworks scale."""
     assert C.SUPPLIER_AUTHORITIES == ["Council-run scheme", "Water supply authority"]
     assert "Private scheme (greywater/blackwater)" not in C.SUPPLIER_APPROVAL_REFS
 
@@ -186,17 +180,16 @@ def test_proceed_when_treated_effluent_discharge_trap_not_triggered():
 
 
 def test_other_water_source_uses_the_standard_supplier_path():
-    """'Other' is not a special CONDITIONAL case — it runs the same
-    supplier-approval path as Treated effluent."""
+    """'Other' runs the same supplier-approval path as Treated effluent."""
     inp = dict(VALID, water_source="Other")
     r = assess_supplier_approval(inp)
     assert r.state == "PROCEED"
 
 
 def test_epl_section_fields_do_not_affect_gate_state():
-    """The informational EPL section (epl_status / epl_number /
-    epl_conditions_permit_supply) is saved to session state and the CSV
-    export, but assess_supplier_approval() never reads it, by design."""
+    """EPL fields (epl_status / epl_number / epl_conditions_permit_supply)
+    are saved to session state and the CSV export, but
+    assess_supplier_approval() never reads them, by design."""
     base_result = assess_supplier_approval(VALID).state
     scenarios = [
         dict(VALID, epl_status="Yes", epl_conditions_permit_supply=True),
@@ -213,8 +206,8 @@ def test_epl_section_fields_do_not_affect_gate_state():
 # Rollup / severity ordering
 # ---------------------------------------------------------------------------
 def test_rollup_worst_state_wins_na_lowest():
-    """NA < PROCEED < CONDITIONAL < REJECT — a NA discharge-trap check for
-    stormwater must never outrank a CONDITIONAL/REJECT from other checks."""
+    """NA < PROCEED < CONDITIONAL < REJECT — a NA check must never outrank
+    a CONDITIONAL/REJECT from another check."""
     inp = dict(VALID, water_source="Stormwater", stormwater_approvals_held="No")
     r = assess_supplier_approval(inp)
     assert r.state == "CONDITIONAL"   # not NA, even though a NA check exists

@@ -3,13 +3,11 @@ frontend/pages/p5_soil_conditions.py
 =========================
 PHASE 5 — Soil & Site Conditions
 
-Collects USCS soil classification and pavement-layer data for three
-independent, opt-in layers (subgrade, sub-base, base) and stores it in
-st.session_state["soil_to_financial"] as one-way default values for the
-Financial Feasibility phase's pavement-profile inputs (information entry
-only — no pass/fail logic). Also collects the recycled water source's
-SAR/EC for the SAR/EC structural-stability screen in
-backend/phases/p5_soil_conditions.py.
+Collects USCS classification and pavement-layer data for three opt-in
+layers (subgrade, sub-base, base); written to
+st.session_state["soil_to_financial"] as one-way defaults for Phase 7's
+pavement-profile inputs. Also collects SAR/EC for the structural-stability
+screen in backend/phases/p5_soil_conditions.py.
 """
 
 import streamlit as st
@@ -44,9 +42,8 @@ def _uscs_layer_section(prefix: str, default_thickness: float):
     class_options = list(C.USCS_SOIL_TABLE[d[cat_key]].keys())
     labels = [f"{code} — {C.USCS_SOIL_TABLE[d[cat_key]][code]['description']}"
               for code in class_options]
-    # Keying on the category means switching category always gets a fresh
-    # widget (its own independent session-state slot) rather than trying to
-    # carry over a selection that may not exist in the new option list.
+    # Keyed on category so switching category gets a fresh widget instead of
+    # carrying over a selection that may not exist in the new option list.
     class_widget_key = f"soil_conditions_{class_key}__{d[cat_key]}"
     st.session_state.setdefault(class_widget_key, labels[0])
     chosen_label = st.selectbox(
@@ -58,9 +55,8 @@ def _uscs_layer_section(prefix: str, default_thickness: float):
     data = C.USCS_SOIL_TABLE[d[cat_key]][d[class_key]]
     lo, hi = data["dry_unit_weight_kN_m3_range"]
     omc_lo, omc_hi = data["omc_range"]
-    # Centred table — st.markdown's own pipe-table syntax always renders
-    # left-aligned with no centring hook, so build the HTML table directly
-    # inside a centred flex container instead.
+    # st.markdown's pipe-table syntax has no centring hook, so build the
+    # table as raw HTML in a centred flex container instead.
     st.markdown(
         '<div style="display:flex;justify-content:center">'
         '<table>'
@@ -74,9 +70,9 @@ def _uscs_layer_section(prefix: str, default_thickness: float):
         unsafe_allow_html=True)
     st.caption(f"Source: {C.SOIL_TABLE_REF}")
 
-    # Composite keys (category + class) so a fresh class gets the table's
-    # midpoint as its default, while re-selecting a previously-visited class
-    # restores whatever the engineer last entered for it.
+    # Composite keys (category + class): a fresh class defaults to the
+    # table's midpoint, but re-selecting a visited class restores what was
+    # last entered.
     omc_widget_key = f"soil_conditions_{omc_key}__{d[cat_key]}__{d[class_key]}"
     density_widget_key = f"soil_conditions_{density_key}__{d[cat_key]}__{d[class_key]}"
     thickness_widget_key = f"soil_conditions_{thickness_key}"
@@ -84,9 +80,6 @@ def _uscs_layer_section(prefix: str, default_thickness: float):
     st.session_state.setdefault(density_widget_key, data["dry_unit_weight_kN_m3_mid"])
     st.session_state.setdefault(thickness_widget_key, default_thickness)
 
-    # One combined Parameter/Value table for this layer's compulsory
-    # fields (always hold a value), and one Measured/Not measured table
-    # for MC, which genuinely may not have been tested.
     value_table([
         (omc_key, "Optimum Moisture Content — OMC (%)",
          f"Pre-filled from typical value for {d[class_key]}. Adjust if "
@@ -129,10 +122,6 @@ def _base_layer_section():
     st.session_state.setdefault(omc_widget_key, C.BASE_LAYER_DEFAULTS["omc_mid"])
     st.session_state.setdefault(thickness_widget_key, 0.2)
 
-    # One combined Parameter/Value table for the base layer's compulsory
-    # fields, and one Measured/Not measured table for MC and density,
-    # which genuinely may not have been tested (no USCS default to fall
-    # back on for base).
     value_table([
         (omc_key, "Optimum Moisture Content — OMC (%)", None, omc_widget_key, 1.0, 50.0),
         (thickness_key, "Layer thickness (m)", None, thickness_widget_key, 0.05, 2.0),

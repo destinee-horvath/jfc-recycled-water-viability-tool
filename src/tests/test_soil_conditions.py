@@ -29,8 +29,8 @@ def test_conditional_when_sar_ec_untested():
 
 
 def test_no_ussl_or_rainfall_check_when_sar_ec_untested():
-    """Informational checks that depend on EC shouldn't appear when there's
-    no result to classify."""
+    """EC-dependent informational checks shouldn't appear with no result
+    to classify."""
     r = assess_soil_conditions({})
     labels = {c.label for c in r.checks}
     assert "USSL salinity classification (informational)" not in labels

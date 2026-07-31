@@ -46,8 +46,8 @@ def test_conditional_when_enduse_not_listed():
 
 
 def test_rwmp_never_returns_reject():
-    """Deliberate design choice: no combination of Phase 3 inputs should
-    ever produce REJECT."""
+    """Deliberate design choice: no combination of inputs should ever
+    produce REJECT."""
     scenarios = [
         {},
         dict(VALID, has_approved_rwmp=False),
@@ -60,9 +60,8 @@ def test_rwmp_never_returns_reject():
 
 
 def test_remaining_checks_still_evaluated_when_rwmp_missing():
-    """Checks 1/2 no longer short-circuit — the 12-element written-
-    confirmation and currency checks must still be evaluated and shown even
-    when the RWMP itself is missing."""
+    """Checks 1/2 no longer short-circuit — still evaluated even when the
+    RWMP itself is missing."""
     r = assess_rwmp(dict(VALID, has_approved_rwmp=False))
     labels = {c.label for c in r.checks}
     assert ("Supplier has confirmed in writing that their approved RWMP "

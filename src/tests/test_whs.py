@@ -30,9 +30,8 @@ VALID = dict(
 
 
 def test_conditional_when_low_risk_and_checklist_complete():
-    """Was PROCEED before the buffer-zone check became always-CONDITIONAL —
-    every other check here still individually PROCEEDs; only the overall
-    phase rollup changed."""
+    """Every other check here still individually PROCEEDs — only the
+    overall rollup changed once buffer-zone became always-CONDITIONAL."""
     r = assess_whs(VALID)
     assert r.state == "CONDITIONAL"
     non_buffer_checks = [c for c in r.checks if c.label != "Buffer zone — needs assessment"]
@@ -47,8 +46,7 @@ def test_conditional_when_spraying_without_weather_check():
 
 
 def test_wind_weather_check_proceeds_when_confirmed_before_spraying():
-    # Overall phase state is still CONDITIONAL here (buffer zone is always
-    # CONDITIONAL) — check the wind/weather gate specifically.
+    # Buffer zone keeps r.state CONDITIONAL — check the wind/weather gate directly.
     inp = dict(VALID, application_method="Sprayed (higher contact)",
                wind_weather_checked=True)
     r = assess_whs(inp)
@@ -119,9 +117,8 @@ def test_conditional_when_water_class_insufficient_for_public_contact():
 
 
 def test_class_check_proceeds_when_water_class_meets_public_contact_requirement():
-    # Overall phase state is still CONDITIONAL here — "Workers and public"
-    # contact always raises its own CONDITIONAL note — so check the
-    # class-vs-risk gate specifically rather than the overall rollup.
+    # "Workers and public" always raises its own CONDITIONAL note, so check
+    # the class-vs-risk gate directly rather than the overall rollup.
     inp = dict(VALID, contact_risk="Workers and public")
     ctx = {"water_quality": {"water_class": "Class A"}}
     r = assess_whs(inp, ctx)
@@ -136,9 +133,8 @@ def test_conditional_when_whs_checklist_incomplete():
 
 
 def test_whs_checklist_is_a_single_combined_check():
-    """Relabelled to one combined 'All WHS checks confirmed?' check (was 5
-    independent per-item checks) — any single NO triggers CONDITIONAL, and
-    the reason text enumerates all five items."""
+    """One combined 'All WHS checks confirmed?' check (was 5 independent
+    per-item checks) — any single NO triggers CONDITIONAL."""
     r = assess_whs(dict(VALID, whs_ppe=False))
     checklist_checks = [c for c in r.checks if c.label.startswith("All WHS checks confirmed?")]
     assert len(checklist_checks) == 1

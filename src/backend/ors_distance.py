@@ -1,15 +1,12 @@
 """
 backend/ors_distance.py
 ========================
-Optional OpenRouteService integration for Phase Financial's transport
-distance inputs — geocodes an address to coordinates, then looks up the
-driving distance (and route geometry, for the map display) between two
-coordinates.
+Optional OpenRouteService integration: geocodes an address, then looks up
+driving distance/route geometry between two coordinates for Phase Financial.
 
-All three functions degrade to ``None`` on ANY failure (network error,
-timeout, non-200 status, or a malformed/unexpected response body) rather
-than raising — callers must always have a manual-entry fallback available,
-since this is an optional convenience, not a dependency.
+All three functions return ``None`` on any failure rather than raising —
+this is an optional convenience, so callers must always have a manual-entry
+fallback.
 """
 
 from __future__ import annotations
@@ -20,18 +17,11 @@ import config as C
 
 
 def get_driving_route(origin: dict, destination: dict, api_key: str) -> dict | None:
-    """
-    Driving distance (km) AND route geometry between two ``{"lat": float,
-    "lng": float}`` points, via ONE call to the OpenRouteService Directions
-    API — the JSON response already includes an encoded polyline geometry
-    at no extra cost, so there's no need for a second request just to draw
-    the route on a map.
-
-    Returns ``{"distance_km": float, "geometry": [[lat, lng], ...]}`` on
-    success, or ``None`` on any failure. ``geometry`` is ``[]`` (never a
-    failure by itself) if the response has no geometry or it fails to
-    decode — callers should render markers-only in that case, not crash.
-    """
+    """Driving distance (km) and route geometry between two {"lat","lng"}
+    points, via one ORS Directions call (geometry comes free in the same
+    response). Returns {"distance_km", "geometry"} or None on failure;
+    geometry is [] (not a failure) if it's missing/undecodable — render
+    markers-only in that case."""
     try:
         resp = requests.post(
             C.ORS_DIRECTIONS_URL,
@@ -56,10 +46,8 @@ def get_driving_route(origin: dict, destination: dict, api_key: str) -> dict | N
 
 
 def _decode_geometry(encoded: str | None) -> list[list[float]]:
-    """Encoded polyline (Google algorithm, precision 5 — ORS's default
-    directions geometry format) -> [[lat, lng], ...]. Decode failures never
-    propagate — a route with a bad/missing geometry still has a valid
-    distance, so this returns [] rather than raising."""
+    """Encoded polyline (Google algorithm, precision 5) -> [[lat, lng], ...].
+    Never raises — a bad/missing geometry shouldn't invalidate the distance."""
     if not encoded:
         return []
     try:
@@ -70,21 +58,14 @@ def _decode_geometry(encoded: str | None) -> list[list[float]]:
 
 
 def get_driving_distance_km(origin: dict, destination: dict, api_key: str) -> float | None:
-    """
-    Driving distance (km) between two ``{"lat": float, "lng": float}``
-    points, via the OpenRouteService Directions API. Returns ``None`` on
-    any failure. Distance-only convenience wrapper around
-    ``get_driving_route()`` — kept for callers that don't need geometry.
-    """
+    """Distance-only convenience wrapper around get_driving_route(), for
+    callers that don't need geometry."""
     route = get_driving_route(origin, destination, api_key)
     return route["distance_km"] if route else None
 
 
 def geocode_address(address: str, api_key: str) -> dict | None:
-    """
-    Text address -> ``{"lat": float, "lng": float}`` via the OpenRouteService
-    Geocoding API. Returns ``None`` on any failure or if no match is found.
-    """
+    """Text address -> {"lat", "lng"} via the ORS Geocoding API, or None."""
     try:
         resp = requests.get(
             C.ORS_GEOCODE_URL,

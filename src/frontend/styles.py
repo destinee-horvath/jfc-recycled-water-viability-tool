@@ -1,8 +1,4 @@
-"""
-frontend/styles.py
-===================
-Page-wide CSS injection.
-"""
+"""frontend/styles.py — page-wide CSS injection."""
 
 import streamlit as st
 

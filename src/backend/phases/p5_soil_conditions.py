@@ -4,19 +4,13 @@ backend/phases/p5_soil_conditions.py
 PHASE 5 — SOIL & SITE CONDITIONS
 
 Two independent checks:
-
-1. USCS soil classification and pavement-layer data (subgrade, sub-base,
-   base) that frontend/pages/p5_soil_conditions.py passes as default values
-   into Financial Feasibility's pavement-profile inputs — see
-   config.USCS_SOIL_TABLE. Information-entry only; always PROCEEDs.
-
-2. SAR/EC structural-stability screen: whether the recycled water source
-   risks degrading the structure of the NATURAL subgrade soil (dispersion/
-   slaking, loss of permeability and strength) — see config.py's "PHASE 5 —
-   SAR/EC soil structural stability" section for the boundary formula and
-   its provenance. Never a hard REJECT — remediable via soil dispersion
-   testing and gypsum/lime amendment, so the worst outcome here is
-   CONDITIONAL.
+1. USCS soil classification / pavement-layer data — information-entry only,
+   feeds Financial Feasibility's pavement-profile defaults; always PROCEEDs.
+2. SAR/EC structural-stability screen — whether the recycled water risks
+   degrading the natural subgrade (dispersion/slaking). Never a hard REJECT
+   (remediable via soil testing + gypsum/lime amendment). See config.py's
+   "PHASE 5 — SAR/EC soil structural stability" section for the boundary
+   formula's provenance.
 """
 
 from __future__ import annotations
@@ -26,16 +20,14 @@ from ..models import CheckResult, PhaseResult
 
 
 def _stability_threshold_sar(ec_dsm: float) -> float:
-    """SAR threshold at a given EC, per the team-derived linear stability
-    boundary (SAR = slope*EC + intercept) — see config.py's PHASE 5 SAR/EC
-    section. A sample is stable if its actual SAR is on/below this line."""
+    """SAR threshold at a given EC (SAR = slope*EC + intercept, see config.py's
+    PHASE 5 SAR/EC section). Stable if actual SAR is on/below this line."""
     return C.SOIL_STABILITY_SLOPE * ec_dsm + C.SOIL_STABILITY_INTERCEPT
 
 
 def _ussl_c_class(ec_dsm: float) -> str:
-    """USSL salinity-hazard class from EC — fixed thresholds, no ambiguity.
-    See config.SOIL_USSL_C_CLASS_US_CM for why the S (sodium-hazard) class
-    isn't computed alongside this."""
+    """USSL salinity-hazard class from EC. S (sodium-hazard) class isn't
+    computed alongside this — see config.SOIL_USSL_C_CLASS_US_CM."""
     ec_us_cm = ec_dsm * 1000
     for limit, label in C.SOIL_USSL_C_CLASS_US_CM:
         if ec_us_cm <= limit:

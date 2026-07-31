@@ -49,9 +49,7 @@ def test_selecting_each_area_type_updates_the_speed_field():
 
 def test_selecting_each_area_type_changes_the_transport_cost_metric():
     """The bug wasn't just cosmetic — a stuck avg_speed_kmh silently
-    mispriced the displayed transport cost too. Confirm the "Recycled /
-    day" metric actually differs across area types, not just the
-    underlying input dict."""
+    mispriced the displayed transport cost too."""
     at = _financial_app()
     seen_costs = {}
     for area_type in C.AREA_TYPE_SPEEDS:
@@ -63,14 +61,12 @@ def test_selecting_each_area_type_changes_the_transport_cost_metric():
 
 
 def test_manually_edited_speed_is_not_clobbered_by_a_rerun():
-    """Once the user types their own speed, it must survive an unrelated
-    rerun — only an actual area-type change should reset it."""
+    """Only an actual area-type change should reset the speed field —
+    an unrelated rerun must not clobber a manually-entered value."""
     at = _financial_app()
     _select_area_type(at, "Rural")
     at.number_input(key="financial_avg_speed_kmh").set_value(77.0).run()
     assert not at.exception, at.exception
 
-    # An unrelated widget interaction triggers a rerun; the manually-entered
-    # speed must be untouched since the area type itself didn't change.
     at.number_input(key="financial_num_trucks").set_value(3).run()
     assert _avg_speed_widget(at).value == 77.0

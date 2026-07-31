@@ -1,9 +1,5 @@
-"""
-frontend/components.py
-========================
-Reusable UI pieces shared across phase pages: the progress bar, validated
-numeric inputs, and the phase-result renderer.
-"""
+"""frontend/components.py — reusable UI pieces shared across phase pages:
+progress bar, validated numeric inputs, phase-result renderer."""
 
 import streamlit as st
 
@@ -29,13 +25,10 @@ def progress_bar(results):
 
 
 def right_status_panel_html(results) -> str:
-    """Same phase-status data as progress_bar(), rendered as a fixed panel
-    docked to the right edge of the viewport with its own scrollbar
-    (.status-panel-right, styles.py) — independent of the main content's
-    scroll position, so it stays visible on long phase pages without
-    competing for scroll with the left nav sidebar. Plain HTML (no
-    Streamlit widgets), since a position:fixed element can't usefully host
-    interactive widgets. Used only on phase pages (see app.py's main())."""
+    """Same data as progress_bar(), but as a fixed panel docked to the
+    right edge (.status-panel-right, styles.py) with its own scroll, so it
+    stays visible on long phase pages. Plain HTML, not Streamlit widgets —
+    a position:fixed element can't host interactive ones. Phase pages only."""
     rows = []
     for phase in C.PHASES:
         r = results.get(phase["id"])
@@ -47,9 +40,8 @@ def right_status_panel_html(results) -> str:
             f'<span>{phase["label"]}{active}</span>{state_badge}</div>'
         )
     return (
-        # Scoped here (not in inject_css()) so the extra right padding only
-        # applies on the runs that actually render the panel — other pages
-        # keep the main content at full width.
+        # Scoped here, not in inject_css(), so the extra padding only
+        # applies when the panel actually renders.
         '<style>.block-container{padding-right:310px !important;}</style>'
         '<div class="status-panel-right">'
         '<h4>Phase status</h4>'
@@ -61,9 +53,8 @@ def right_status_panel_html(results) -> str:
 def opt_num(label, phase_id, key, help=None, default_measured=False):
     """Optional measurement: a Measured/Not measured toggle + non-negative value.
 
-    ``default_measured`` only affects the FIRST render of a field that has
-    never been touched — after that, Streamlit's own widget state (driven by
-    the user's choice) takes over regardless of this default.
+    ``default_measured`` only affects the first render of an untouched
+    field — after that, Streamlit's own widget state takes over.
     """
     d = gi(phase_id)
     c1, c2 = st.columns([1, 2])
@@ -82,19 +73,14 @@ def opt_num(label, phase_id, key, help=None, default_measured=False):
 
 def measured_table(items, phase_id, show_header=True):
     """
-    Renders a Parameter | Measured | Not measured | Value table —
-    one row per (key, row_label, help_text) in ``items``. Unlike opt_num()'s
-    single Measured/Not-measured radio, this uses a button PER COLUMN so the
-    layout reads as a table (used by Phase 3). New fields default to visible
-    (Measured); after the user picks a column once, that choice persists.
-    The value itself starts empty (``value=None``), never a silent 0 — an
-    untouched field must read as "no result supplied" (each check's own
-    CONDITIONAL path), not as a measured zero that can trigger a false
-    REJECT (e.g. compressive strength/pH) or false PROCEED (e.g. sugar/oil,
-    which pass trivially at 0).
-    ``show_header=False`` skips the header row — use when this call's rows
-    follow directly on from a value_table()/measured_table() call that
-    already drew the header, so the two read as one continuous table.
+    Parameter | Measured | Not measured | Value table, one row per (key,
+    row_label, help_text) in ``items``. Unlike opt_num(), uses a button per
+    column so it reads as a table (used by Phase 3); the user's column
+    choice persists once made. Value starts empty (``None``), never a
+    silent 0 — an untouched field must read as "no result supplied", not a
+    measured zero that could trigger a false REJECT or PROCEED.
+    ``show_header=False`` skips the header row when continuing a table
+    started by a prior value_table()/measured_table() call.
     """
     d = gi(phase_id)
     if show_header:
@@ -112,10 +98,9 @@ def measured_table(items, phase_id, show_header=True):
         st.session_state.setdefault(state_key, True)
         measured = st.session_state[state_key]
 
-        # A just-clicked button can't restyle itself within the same script
-        # run (Streamlit already sent its old `type` to the frontend before
-        # the click is processed) — rerun immediately so the next pass draws
-        # both buttons and the value input from the new, settled state.
+        # A just-clicked button can't restyle itself in the same script run
+        # (Streamlit already sent its old `type` before the click was
+        # processed) — rerun so the next pass draws the settled state.
         if c2.button("Measured", key=f"btn_m_{phase_id}_{key}",
                      type="primary" if measured else "secondary",
                      width="stretch") and not measured:
@@ -140,14 +125,11 @@ def measured_table(items, phase_id, show_header=True):
 
 def value_table(items, phase_id, show_header=True):
     """
-    Parameter | Value table for COMPULSORY numeric inputs — same column
-    layout as measured_table() (parameter in the first column, value in the
-    last) but without the Measured/Not measured toggle, since these fields
-    are always required. Caller must st.session_state.setdefault(widget_key,
-    ...) before calling, same as a plain st.number_input() would need.
-    ``show_header=False`` behaves as in measured_table() — skips the header
-    row when rows continue directly from a prior value_table()/
-    measured_table() call.
+    Parameter | Value table for compulsory numeric inputs — same column
+    layout as measured_table() but no Measured/Not-measured toggle. Caller
+    must st.session_state.setdefault(widget_key, ...) beforehand, as a
+    plain st.number_input() would need. ``show_header`` behaves as in
+    measured_table().
     """
     d = gi(phase_id)
     if show_header:
@@ -174,20 +156,17 @@ def money(label, phase_id, key, help=None):
 
 def colour_inputs_by_state(phase_result: B.PhaseResult, phase_id: str):
     """
-    Border/tint the Measured/Not-measured and Value-table number inputs by
-    their own check's REJECT (red) / PROCEED (green) state, for at-a-glance
-    readability — CONDITIONAL/NA are left unstyled (default look), since
-    they're neither a pass nor a fail. Relies on Streamlit's auto-generated
-    ``st-key-<key>`` CSS class for the widget whose ``key=`` matches
-    measured_table()/value_table()'s own ``v_{phase_id}_{key}`` convention,
-    so this only colours checks that set CheckResult.key (see models.py).
-    Call this once per page, anywhere after the relevant measured_table()/
-    value_table() calls — a <style> tag applies regardless of DOM order.
+    Border/tint each number input by its check's REJECT (red) / PROCEED
+    (green) state; CONDITIONAL/NA stay unstyled. Relies on Streamlit's
+    auto-generated ``st-key-<key>`` class matching measured_table()/
+    value_table()'s ``v_{phase_id}_{key}`` convention, so only checks with
+    a ``CheckResult.key`` get coloured (see models.py). Call once per page,
+    after the relevant table calls — a <style> tag applies regardless of
+    DOM order.
 
-    Targets ``div[data-testid="stNumberInputContainer"]`` rather than the
-    bare ``input`` — that container div is what actually draws the visible
-    border/background box in Streamlit's number_input; the nested <input>
-    itself renders borderless, so styling it directly is invisible.
+    Targets ``div[data-testid="stNumberInputContainer"]``, not the bare
+    ``input`` — that container is what actually draws the border/
+    background; the nested <input> itself renders borderless.
     """
     colour_by_state = {"REJECT": C.COLOUR_DANGER, "PROCEED": C.COLOUR_SUCCESS}
     css = "".join(

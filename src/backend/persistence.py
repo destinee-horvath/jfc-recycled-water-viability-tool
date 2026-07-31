@@ -1,12 +1,9 @@
 """
 backend/persistence.py
 =======================
-PERSISTENCE — CSV save/load.
-
-For persistent (non-ephemeral) storage, swap the file-based functions below
-for a cloud storage bucket or database client — the rest of the application
-(models, phases, orchestration, frontend) is unaffected since everything
-here goes through the same handful of function signatures.
+CSV save/load. Swap these file-based functions for a cloud storage/DB
+client later — the rest of the app is unaffected as long as the same
+function signatures are kept.
 """
 
 from __future__ import annotations
@@ -67,9 +64,7 @@ def _coerce(v: Any):
 
 
 def build_record(inputs: dict[str, dict], meta: dict) -> dict:
-    """One flat dict = one saved assessment (audit trail + inputs). No
-    verdict/score by design — just the per-check readiness breakdown (see
-    orchestration.readiness_summary), not a headline verdict."""
+    """One flat dict = one saved assessment. No verdict/score by design."""
     rec = {
         "assessment_name": meta.get("assessment_name", ""),
         "assessed_by": meta.get("assessed_by", ""),
@@ -80,9 +75,7 @@ def build_record(inputs: dict[str, dict], meta: dict) -> dict:
 
 
 def record_to_csv_bytes(rec: dict) -> bytes:
-    """phase/field/value rows — phase.field keys (see _flatten) are split
-    into their own columns; meta keys (no dot, e.g. assessment_name) get an
-    empty phase."""
+    """phase/field/value rows; meta keys (no dot) get an empty phase."""
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["phase", "field", "value"])
@@ -109,8 +102,7 @@ def list_saved() -> list[str]:
 
 
 def load_assessment_bytes(data: bytes) -> dict:
-    """Parse CSV bytes (phase/field/value rows) -> record dict, rejoining
-    phase+field into the phase.field keys _unflatten() expects."""
+    """Parse CSV bytes -> record dict, rejoining phase+field into phase.field keys."""
     text = data.decode("utf-8") if isinstance(data, (bytes, bytearray)) else data
     rec = {}
     r = csv.reader(io.StringIO(text))
@@ -131,9 +123,8 @@ def load_assessment_file(filename: str) -> dict:
 
 
 def record_to_inputs(rec: dict) -> tuple[dict[str, dict], dict]:
-    """Split a saved record back into (inputs, meta) for repopulating fields.
-    Drops any legacy verdict/score columns (from older saved files) rather
-    than surfacing them in meta."""
+    """Split a saved record back into (inputs, meta). Drops legacy
+    verdict/score columns from older saved files."""
     meta = {
         "assessment_name": rec.get("assessment_name", ""),
         "assessed_by": rec.get("assessed_by", ""),

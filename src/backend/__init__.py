@@ -2,13 +2,11 @@
 backend/
 ========
 All assessment logic + persistence for the Recycled Water Viability
-Assessment Tool. The frontend holds NO decision logic — it only collects
+Assessment Tool. The frontend holds no decision logic — it only collects
 inputs and renders whatever this package returns.
 
-Default values for Phase 7's financial inputs (config.FINANCIAL_DEFAULTS) are
-sensible starting figures, not confirmed rates — they should be reviewed with
-finance / the trucking contractor / the relevant water authority before
-being relied on operationally.
+Phase 7's config.FINANCIAL_DEFAULTS are starting figures, not confirmed
+rates — review with finance/contractor/water authority before relying on them.
 
 Package layout:
     models.py         CheckResult / PhaseResult data structures.
@@ -20,10 +18,8 @@ Package layout:
     excel.py           Colour-coded Excel (.xlsx) export — display-only, not re-importable.
     ors_distance.py    Optional OpenRouteService geocoding/driving-distance lookup.
 
-Return contract: every phase function takes a plain ``dict`` of inputs and
-returns a ``PhaseResult(phase_id, checks=[CheckResult, ...], state, mandatory)``.
-Each ``CheckResult`` carries its own colour-coded state, legislation
-reference, and a short human-readable detail string.
+Contract: every phase function takes a plain ``dict`` of inputs and returns
+a ``PhaseResult(phase_id, checks=[CheckResult, ...], state, mandatory)``.
 """
 
 from .models import CheckResult, PhaseResult

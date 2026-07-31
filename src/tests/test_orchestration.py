@@ -3,14 +3,12 @@ tests/test_orchestration.py
 =============================
 End-to-end: run_assessment() + readiness_summary() across all 7 phases. This
 is a checklist tool, not a sequential gate — every phase is always assessed
-and always editable, regardless of any other phase's outcome; a REJECT
-anywhere only adds to the blocking list, never blocks downstream phases.
+regardless of any other phase's outcome; a REJECT anywhere only adds to the
+blocking list, never blocks downstream phases.
 
-No single pass/fail verdict or score by design — just the
-blocking/pending/confirmed breakdown. The WHS buffer-zone check is always
-CONDITIONAL (see backend/phases/p6_whs.py), so WHS itself — and therefore
-every assessment as a whole — can never resolve to "everything PROCEEDs";
-there's always at least one pending item.
+The WHS buffer-zone check is always CONDITIONAL (see
+backend/phases/p6_whs.py), so an assessment can never resolve to "everything
+PROCEEDs" — there's always at least one pending item.
 """
 
 import backend as B
@@ -53,10 +51,9 @@ FULLY_VIABLE_INPUTS = {
         "whs_ppe": True, "whs_swms": True, "whs_signage": True,
     },
     # Deliberately cost-favourable (Custom mode, recycled cheaper on both
-    # water rate and transport distance) so this phase PROCEEDs — the
-    # config.FINANCIAL_DEFAULTS fallback is CONDITIONAL (see
-    # tests/test_financial.py), which would make it impossible for "every
-    # phase proceeds except buffer zone" to hold below.
+    # rate and distance) so this phase PROCEEDs — the FINANCIAL_DEFAULTS
+    # fallback is CONDITIONAL (see tests/test_financial.py) and would break
+    # the "every phase proceeds except buffer zone" scenario below.
     "financial": {
         "water_cost_mode": "Custom", "potable_cost_normal": 20.0,
         "potable_cost_drought": 30.0, "recycled_cost_normal": 1.0,
@@ -101,9 +98,8 @@ def test_blocking_populated_when_supplier_approval_rejects_but_downstream_phases
 
 
 def test_no_phase_ever_locks_downstream_phases():
-    """The tool is a checklist, not a sequential gate — PhaseResult no
-    longer has a locking concept at all, and every phase remains
-    independently assessed regardless of any other phase's REJECT."""
+    """PhaseResult has no locking concept — a REJECT in one phase never
+    blocks another."""
     inputs = _deep_copy_inputs()
     inputs["supplier_approval"]["operated_without_approval"] = True
     results = B.run_assessment(inputs)

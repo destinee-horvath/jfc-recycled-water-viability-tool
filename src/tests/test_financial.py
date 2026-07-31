@@ -2,12 +2,10 @@
 tests/test_financial.py
 =====================
 PHASE — Financial Feasibility: pavement/dust-suppression/concrete-kerb
-water-volume model and the whole-of-project potable-vs-recycled cost
-comparison built on top of it. Ported term-for-term from the original
-source cost model, treated as ground truth — see
-backend/phases/p7_financial.py's module docstring.
-No REJECT case — an unfavourable cost comparison is CONDITIONAL only,
-never a hard reject; asserted as an invariant below.
+water-volume model and potable-vs-recycled cost comparison. Ported
+term-for-term from the original source cost model, treated as ground
+truth (see backend/phases/p7_financial.py). No REJECT case — an
+unfavourable cost comparison is CONDITIONAL only, asserted below.
 """
 
 import math
@@ -22,10 +20,8 @@ from backend.phases.p7_financial import (
 
 # ---------------------------------------------------------------------------
 # financial_analysis() with defaults (inp={}) — every field falls back to
-# config.FINANCIAL_DEFAULTS, so this doubles as a defaults sanity check.
-# Every expected value below is hand-derived from the source model's own
-# formulas (see backend/phases/p7_financial.py), not from an external
-# worked example.
+# config.FINANCIAL_DEFAULTS. Expected values are hand-derived from the
+# source model's own formulas (backend/phases/p7_financial.py).
 # ---------------------------------------------------------------------------
 def test_defaults_produce_expected_pavement_volume():
     fa = financial_analysis({})
@@ -49,8 +45,7 @@ def test_defaults_water_cost_mode_is_standard_port_macquarie():
 
 
 def test_region_table_matches_reference_data():
-    """Real region/rate lookup data — ground truth, not a
-    placeholder."""
+    """Real region/rate lookup data — ground truth, not a placeholder."""
     expected = {
         "Sydney":         (3.41, 3.84, 3.07),
         "Ballina":        (6.82, 6.82, 0.30),
@@ -87,37 +82,27 @@ def test_defaults_transport_matches_source_formula():
 
 
 def test_trips_per_truck_multiplies_travel_hours_and_fuel_not_onsite_hours():
-    """Matches the source model exactly — trips_per_truck scales travel
-    hours (and therefore fuel) but not hours_onsite (trucks*hours_onsite,
-    no trips factor)."""
+    """trips_per_truck scales travel hours/fuel but not hours_onsite
+    (trucks*hours_onsite has no trips factor), so cost doesn't simply double."""
     base = financial_analysis({"trips_per_truck": 1})
     doubled = financial_analysis({"trips_per_truck": 2})
-    # Travel-hours-derived component doubles; onsite-hours component doesn't,
-    # so the per-day cost does NOT simply double.
     assert doubled["potable_transport_cost_per_day"] > base["potable_transport_cost_per_day"]
     assert doubled["potable_transport_cost_per_day"] < base["potable_transport_cost_per_day"] * 2
 
 
 def test_fuel_cost_uses_hardcoded_50_not_actual_speed():
-    """Matches the source model exactly — fuel cost is computed as if
-    speed were always 50km/h, regardless of the area-type speed actually
-    selected. A source-model quirk, implemented literally, not
-    "corrected" — see _transport_cost_per_day()'s docstring."""
-    urban = financial_analysis({"area_type": "Urban"})          # speed 50
-    rural = financial_analysis({"area_type": "Rural"})           # speed 60
-    # Travel hours differ (rural is faster -> fewer hours -> cheaper hire
-    # component), but the fuel component alone should be affected only via
-    # the hours change, not a direct speed factor — verify fuel isn't zero
-    # and total cost genuinely differs between area types (hire savings
-    # aren't perfectly cancelled by anything).
+    """Source-model quirk, implemented literally not "corrected": fuel cost
+    is computed as if speed were always 50km/h regardless of area type —
+    see _transport_cost_per_day()'s docstring."""
+    urban = financial_analysis({"area_type": "Urban"})   # speed 50
+    rural = financial_analysis({"area_type": "Rural"})   # speed 60
     assert urban["potable_transport_cost_per_day"] != rural["potable_transport_cost_per_day"]
 
 
 # ---------------------------------------------------------------------------
-# Dust suppression — ALWAYS computed and included (no application-type
-# gate — the source model has none). An earlier version of this module
-# gated dust suppression behind Water Quality's selected application type;
-# that gate has been removed.
+# Dust suppression — ALWAYS computed, no application-type gate (the source
+# model has none). An earlier version gated it behind Water Quality's
+# application type; that gate was removed.
 # ---------------------------------------------------------------------------
 def test_dust_suppression_always_computed():
     fa = financial_analysis({})
@@ -130,8 +115,7 @@ def test_dust_suppression_always_computed():
 
 
 def test_dust_suppression_volume_scales_with_project_duration_days():
-    """project_duration_days (a plain independent input) scales the volume
-    linearly."""
+    """project_duration_days scales the volume linearly."""
     fa_short = financial_analysis({"project_duration_days": 5})
     fa_long = financial_analysis({"project_duration_days": 50})
     assert fa_long["total_dust_suppression_kL"] == pytest.approx(
@@ -139,7 +123,6 @@ def test_dust_suppression_volume_scales_with_project_duration_days():
 
 
 def test_dust_suppression_inputs_affect_the_result():
-    """Every one of the six dust-suppression inputs should move the output."""
     base = financial_analysis({})
     bumped = financial_analysis(
         {"surface_area_m2": 72000, "water_per_m2_L": 8, "applications_per_day": 10,
@@ -148,8 +131,7 @@ def test_dust_suppression_inputs_affect_the_result():
 
 
 # ---------------------------------------------------------------------------
-# Concrete Kerb + Elements — ALWAYS computed and included, same as dust
-# suppression above.
+# Concrete Kerb + Elements — ALWAYS computed, same as dust suppression above.
 # ---------------------------------------------------------------------------
 def test_concrete_kerb_always_computed():
     fa = financial_analysis({})
@@ -164,8 +146,7 @@ def test_concrete_mixing_kerb_type_lookup():
 
 
 def test_concrete_mixing_water_cement_ratio_table_matches_reference_data():
-    """The 0.38 entry is 0.133 — corrected from a typo in the original
-    source data, which read 13.3."""
+    """The 0.38 entry is 0.133 — corrected from a source-data typo (13.3)."""
     for ratio, fraction in C.CONCRETE_WATER_CEMENT_RATIO_TABLE.items():
         fa = financial_analysis({"water_cement_ratio": ratio, "road_length_m": 0,
                                   "additional_concrete_volume_m3": 100})
@@ -175,8 +156,8 @@ def test_concrete_mixing_water_cement_ratio_table_matches_reference_data():
 
 # ---------------------------------------------------------------------------
 # Combined project volume — pavement + dust suppression + concrete kerb,
-# ALWAYS summed together. No branching by application type anywhere —
-# matches the source model, which has none.
+# always summed. No branching by application type, matching the source
+# model.
 # ---------------------------------------------------------------------------
 def test_combined_volume_is_always_the_sum_of_all_three_components():
     fa = financial_analysis({})
@@ -200,16 +181,14 @@ def test_zero_dust_and_concrete_inputs_still_only_leave_pavement():
 
 
 # ---------------------------------------------------------------------------
-# Delivery days (§10) — pavement+concrete are trucked and divided
-# by daily fleet capacity; dust suppression has its own independent day
-# count (project_duration_days) added on top, not divided in.
+# Delivery days (§10) — pavement+concrete are trucked and divided by daily
+# fleet capacity; dust suppression has its own day count
+# (project_duration_days) added on top, not divided in.
 # ---------------------------------------------------------------------------
 def test_delivery_days_trucked_excludes_dust_suppression_volume():
     fa = financial_analysis({})
     trucked = fa["total_pavement_volume_kL"] + fa["concrete_water_kL"]
     assert fa["delivery_days_trucked"] == math.ceil(trucked / fa["volume_per_day_kL"])
-    # Confirm dust suppression volume, which is large by default, is NOT
-    # part of that division.
     assert fa["delivery_days_trucked"] != math.ceil(
         fa["combined_total_volume_kL"] / fa["volume_per_day_kL"])
 
@@ -243,8 +222,7 @@ def test_delivery_days_trucked_is_ceiled():
 
 def test_zero_trucks_gives_zero_trucked_days_but_dust_days_remain():
     """volume_per_day_kL divides by num_trucks*trips*capacity — must guard
-    against division by zero rather than raising. Dust suppression's day
-    count is independent of trucking, so it's unaffected."""
+    against division by zero rather than raising."""
     fa = financial_analysis({"num_trucks": 0})
     assert fa["volume_per_day_kL"] == 0
     assert fa["delivery_days_trucked"] == 0
@@ -267,16 +245,14 @@ def test_water_costs_are_rounded_up_to_whole_dollars():
 
 
 def test_savings_derived_from_rounded_water_costs():
-    """Savings are computed from the already-rounded water-cost figures,
-    matching the source model exactly."""
     fa = financial_analysis({})
     assert fa["savings_normal"] == fa["potable_water_cost_normal"] - fa["recycled_water_cost"]
     assert fa["savings_drought"] == fa["potable_water_cost_drought"] - fa["recycled_water_cost"]
 
 
 def test_volumes_and_transport_costs_are_not_rounded():
-    """Only the four final water-cost outputs are rounded up — every
-    intermediate volume and per-day transport cost stays full precision."""
+    """Only the four final water-cost outputs are rounded up — intermediate
+    volumes and per-day transport costs stay full precision."""
     fa = financial_analysis({})
     assert fa["concrete_water_kL"] == pytest.approx(74.97, abs=0.01)
     assert not float(fa["potable_transport_cost_per_day"]).is_integer() or True  # no rounding applied
@@ -284,8 +260,7 @@ def test_volumes_and_transport_costs_are_not_rounded():
 
 
 # ---------------------------------------------------------------------------
-# Profit / Loss (§10) — new output, not previously in the
-# tool. profit = max(savings - transport_cost_difference, 0).
+# Profit / Loss (§10) — profit = max(savings - transport_cost_difference, 0).
 # ---------------------------------------------------------------------------
 def test_profit_loss_matches_defaults_hand_calculation():
     fa = financial_analysis({})
@@ -337,8 +312,7 @@ def test_standard_mode_region_lookup_overrides_default_region():
 
 
 # ---------------------------------------------------------------------------
-# Verdict logic — based on the continuous (unrounded) whole-of-project
-# totals, kept specifically for this purpose and the break-even chart.
+# Verdict logic — based on continuous (unrounded) whole-of-project totals.
 # ---------------------------------------------------------------------------
 def test_verdict_proceed_when_recycled_cheaper_than_potable_normal():
     fa = financial_analysis({"water_cost_mode": "Custom", "potable_cost_normal": 20.0,
@@ -373,8 +347,7 @@ def test_never_rejects_even_in_worst_case():
 
 
 def test_conditional_when_no_pavement_dust_or_concrete_volume():
-    """Zero road geometry AND zero dust/concrete inputs -> zero combined
-    volume -> insufficient inputs, not a crash."""
+    """Zero volume everywhere -> insufficient inputs, not a crash."""
     r = assess_financial({
         "num_lanes": 0, "num_shoulders": 0, "road_length_m": 0,
         "surface_area_m2": 0, "additional_concrete_volume_m3": 0,
@@ -408,9 +381,8 @@ def test_assess_financial_check_mentions_excluded_layers():
 
 
 # ---------------------------------------------------------------------------
-# recycled_distance_breakeven_curve() — the "Cost summary & break-even
-# analysis" chart's data source. Sweeps recycled_distance_km only; every
-# other input (including potable_distance_km) stays fixed.
+# recycled_distance_breakeven_curve() — the break-even chart's data source.
+# Sweeps recycled_distance_km only; every other input stays fixed.
 # ---------------------------------------------------------------------------
 def test_curve_has_expected_shape():
     bc = recycled_distance_breakeven_curve({})
@@ -420,8 +392,7 @@ def test_curve_has_expected_shape():
 
 
 def test_potable_totals_are_flat_across_the_recycled_distance_sweep():
-    """Only recycled_distance_km is swept — potable_distance_km is held
-    fixed, so potable's totals must not vary across the curve."""
+    """potable_distance_km is held fixed across the sweep."""
     bc = recycled_distance_breakeven_curve({})
     potable_values = {pt["potable"] for pt in bc["curve"]}
     potable_drought_values = {pt["potable_drought"] for pt in bc["curve"]}
@@ -436,10 +407,8 @@ def test_recycled_cost_rises_monotonically_with_distance():
 
 
 def test_breakeven_distance_is_exact():
-    """The recycled total cost at the computed break-even distance must
-    equal the (fixed) potable total cost — confirms the 2-point linear
-    interpolation is exact, not approximate, since transport cost really
-    is linear in distance."""
+    """Confirms the 2-point linear interpolation is exact, not
+    approximate — transport cost really is linear in distance."""
     bc = recycled_distance_breakeven_curve({})
     be_km = bc["breakeven_distance_km"]
     assert be_km is not None
@@ -448,17 +417,17 @@ def test_breakeven_distance_is_exact():
 
 
 def test_breakeven_none_when_transport_cost_independent_of_distance():
-    """Zero trucks means recycled's transport cost per day is 0 regardless
-    of distance — the curve is flat, so there's no break-even crossing."""
+    """Zero trucks -> recycled cost per day is 0 regardless of distance ->
+    curve is flat, no crossing."""
     bc = recycled_distance_breakeven_curve({"num_trucks": 0})
     assert bc["breakeven_distance_km"] is None
     assert bc["breakeven_distance_drought_km"] is None
 
 
 # ---------------------------------------------------------------------------
-# Per-layer "relevant to this job" inclusion checkbox. Not in the source
-# model (which has no exclusion mechanism at all — every layer is always
-# summed) — a deliberate tool usability enhancement, kept as-is.
+# Per-layer "relevant to this job" inclusion checkbox — not in the source
+# model (every layer is always summed there); a deliberate usability
+# enhancement.
 # ---------------------------------------------------------------------------
 def test_all_layers_included_by_default():
     fa = financial_analysis({})
@@ -475,15 +444,15 @@ def test_excluded_layer_does_not_count_toward_total():
 
 def test_excluded_layer_volume_still_reported_for_information():
     """layer_volumes_kL always shows what the layer WOULD need — only the
-    total excludes it — so the engineer can see what's being left out."""
+    total excludes it."""
     fa_all = financial_analysis({})
     fa_excl = financial_analysis({"layer_base_included": False})
     assert fa_excl["layer_volumes_kL"]["base"] == pytest.approx(fa_all["layer_volumes_kL"]["base"])
 
 
 def test_all_layers_excluded_leaves_dust_and_concrete_volume():
-    """With every pavement layer excluded, combined volume is dust suppression
-    + concrete kerb only (both still always-on) — not zero."""
+    """All pavement layers excluded -> combined volume is dust suppression
+    + concrete kerb only (both always-on), not zero."""
     fa = financial_analysis({
         "layer_subgrade_included": False,
         "layer_subbase_included": False,

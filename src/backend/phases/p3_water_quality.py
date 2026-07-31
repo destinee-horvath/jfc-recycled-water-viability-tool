@@ -45,9 +45,8 @@ def _assess_concrete(inp: dict) -> PhaseResult:
     g = PhaseResult(phase_id="water_quality", mandatory=False)
 
     # --- Table 2.1: compressive strength vs control sample ------------------
-    # Every parameter below is evaluated and shown regardless of earlier
-    # results — an engineer needs the full picture in one pass, not just the
-    # first failure, so nothing here short-circuits on REJECT/CONDITIONAL.
+    # No short-circuiting: every parameter is evaluated so the engineer sees
+    # the full picture in one pass, not just the first failure.
     strength_pct = inp.get("compression_strength_pct")
     if strength_pct is None:
         g.checks.append(CheckResult(
@@ -110,9 +109,7 @@ def _assess_dust_suppression(inp: dict) -> PhaseResult:
     """Dust Suppression — Table 3.8 (unrestricted-access municipal-use tier)."""
     g = PhaseResult(phase_id="water_quality", mandatory=False)
 
-    # Every parameter below is evaluated and shown regardless of earlier
-    # results — an engineer needs the full picture in one pass, not just the
-    # first failure, so nothing here short-circuits on REJECT/CONDITIONAL.
+    # No short-circuiting: every parameter is evaluated, not just the first failure.
     pathogen_pct = inp.get("pathogen_pct")
     if pathogen_pct is None:
         g.checks.append(CheckResult(

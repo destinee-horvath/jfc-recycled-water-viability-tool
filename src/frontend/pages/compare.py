@@ -14,9 +14,8 @@ from ..theme import badge
 
 
 def _load_side(label: str, col, saved: list[str], key_prefix: str):
-    """One side's picker: a saved_assessments/ dropdown OR an uploaded CSV.
-    The upload takes priority whenever a file is present, mirroring
-    setup.py's own "pick from server, or upload instead" pattern."""
+    """One side's picker: saved_assessments/ dropdown or uploaded CSV.
+    Upload takes priority when present (mirrors setup.py's pattern)."""
     with col:
         pick = st.selectbox(f"{label} — from saved_assessments/", ["—"] + saved,
                              key=f"{key_prefix}_pick")

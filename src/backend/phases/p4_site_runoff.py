@@ -17,11 +17,7 @@ from ..models import CheckResult, PhaseResult
 def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
     g = PhaseResult(phase_id="site_runoff", mandatory=False)
 
-    # --- Scheduled-activity threshold (Sch 1, Cl 35) -> is an EPL required? -
-    # Cl 35 applies to extraction/on-site processing (crushing, grinding, or
-    # separating) of materials for road construction only — NOT to onsite
-    # concrete batching, compacting road base, general earthworks, or
-    # maintenance.
+    # --- Scheduled-activity threshold (Sch 1, Cl 35) -> is an EPL required? ---
     label = "Does the project involve extraction, or on-site processing (crushing, grinding, or separating), of materials for road construction?"
     detail_note = (
         "Schedule 1 Clause 35 applies to extraction and on-site processing "
@@ -83,11 +79,8 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
             ))
 
     # --- Proximity to waters -------------------------------------------------
-    # Mirrors measured_table()'s own convention (see frontend/components.py):
-    # an untouched field starts at None and must read as "no result
-    # supplied" (CONDITIONAL), never silently disappear from the checklist —
-    # otherwise a distance no one ever entered reads identically to a
-    # distance confirmed safely outside the buffer.
+    # None must read as CONDITIONAL ("no result supplied"), never silently
+    # pass — else an unentered distance would look the same as a confirmed-safe one.
     dist = inp.get("distance_to_waterway_m")
     if dist is not None and dist < 100:
         g.checks.append(CheckResult(
@@ -111,12 +104,9 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
         ))
 
     # --- Runoff direction -----------------------------------------------------
-    # Tri-state (Yes/No/Unconfirmed, see config.APPROVAL_STATES) rather than
-    # a checkbox — a checkbox's unchecked state can't distinguish "confirmed
-    # runoff does NOT drain toward waters" from "never looked at this field",
-    # so it always defaults to CONDITIONAL until actively confirmed either
-    # way. Also accepts legacy True/False from CSVs saved before this field
-    # became a tri-state.
+    # Tri-state (Yes/No/Unconfirmed): a checkbox couldn't distinguish "confirmed
+    # not toward waters" from "never checked", so this defaults to CONDITIONAL
+    # until actively confirmed. Also accepts legacy True/False from old CSVs.
     slope = inp.get("slope_toward_waterway")
     if slope is True or slope == "Yes":
         g.checks.append(CheckResult(
@@ -139,11 +129,8 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
         ))
 
     # --- Sensitive receiving environment --------------------------------------
-    # The selectbox always shows an explicit choice (unlike a checkbox, its
-    # default IS visible to the user), so recording PROCEED for the
-    # "None / not sensitive" default is a legitimate confirmation, not a
-    # silent pass — consistent with how every other selectbox default in
-    # this tool is treated.
+    # Selectbox default is visible to the user, so "None / not sensitive" is a
+    # legitimate confirmation, not a silent pass.
     sens = inp.get("sensitive_environment", C.SENSITIVE_ENVIRONMENTS[0])
     if sens and sens != C.SENSITIVE_ENVIRONMENTS[0]:
         g.checks.append(CheckResult(
@@ -172,10 +159,8 @@ def assess_site_runoff(inp: dict, ctx: dict = None) -> PhaseResult:
             ))
 
     # --- Ponding / overflow risk & containment / emergency response ----------
-    # Two sequential questions (FR4.7): risk first, containment only if a
-    # risk was actually identified — a site with no identified risk PROCEEDs
-    # immediately rather than being asked about containment for a risk that
-    # doesn't exist.
+    # Two sequential questions (FR4.7): containment is only asked about if a
+    # risk was actually identified.
     ponding_label = ("Is there a risk of ponding or site overflow, and if so, "
                       "are containment & emergency response procedures documented?")
     if not inp.get("ponding_overflow_risk"):

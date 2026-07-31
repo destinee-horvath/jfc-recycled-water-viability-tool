@@ -14,13 +14,8 @@ from .models import PhaseResult
 
 
 def build_pdf(meta: dict, results: dict[str, PhaseResult], readiness: dict) -> bytes:
-    """
-    Render the Readiness Summary as a PDF for attaching to a project file.
-    No headline verdict/score by design — just the per-check
-    blocking/pending/confirmed breakdown (see orchestration.readiness_summary).
-    Uses reportlab if available; otherwise returns a minimal hand-built PDF
-    so the download button always works.
-    """
+    """Render the Readiness Summary as a PDF. Uses reportlab if available,
+    otherwise falls back to a minimal hand-built PDF so the download always works."""
     try:
         return _build_pdf_reportlab(meta, results, readiness)
     except Exception:

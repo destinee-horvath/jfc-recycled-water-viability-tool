@@ -39,10 +39,8 @@ def page_supplier_approval(results):
     st.subheader("Supplier-side approval")
 
     def _lookup_expander(label, note):
-        """Collapsed by default — keeps a "where to check this" note (with
-        its clickable register link) out of the way until the user
-        actually needs it, instead of sitting as permanent caption text
-        between every question."""
+        """Collapsed by default — keeps the "where to check this" note out
+        of the way until needed."""
         with st.expander(label, expanded=False):
             st.markdown(note)
 
@@ -97,7 +95,7 @@ def page_supplier_approval(results):
                 help="A discharge licence is not permission to use the water.",
                 key="supplier_approval_discharge_only")
 
-    # --- EPL section (informational — does not affect the pass/reject gates) -
+    # EPL section is informational — does not affect the pass/reject gates.
     st.markdown("**Environment Protection Licence (EPL)**",
                 help=f"{C.EPL_SECTION_EXPLANATION} {C.TOOLTIP_EPL}")
     _lookup_expander("🔍 Don't have the EPL details yet?", C.EPL_REGISTER_NOTE)
@@ -126,8 +124,7 @@ def page_supplier_approval(results):
     st.subheader("Dual approval — your permission to use this water",
                  help=f"{C.TOOLTIP_DUAL_APPROVAL} {C.DUAL_APPROVAL_PLAIN_NOTE}")
     try:
-        # Falls back to the safe default if a legacy saved value
-        # (e.g. the retired "Unconfirmed" option) is no longer a valid choice.
+        # Falls back to the safe default if a legacy saved value is no longer valid.
         user_state_index = C.USER_APPROVAL_STATES.index(
             d.get("user_approval_state", C.USER_APPROVAL_STATES[-1]))
     except ValueError:

@@ -5,14 +5,12 @@ PHASE — Financial Feasibility
 
 Collects inputs across six sections (Water Costs, Pavement Profile, Road
 Geometry, Transport & Operational Costs, Dust Suppression, Concrete Kerb +
-Elements) — all always shown, matching the original source cost model,
-which has no gate on any of these by Water Quality's selected application
-type. Dust Suppression and Concrete Kerb + Elements each carry their own
-"included" checkbox (same pattern as a pavement layer's) so an engineer can
-exclude either from a job that doesn't use it, without losing the entered
-figures. Renders backend.financial_analysis()'s output as a cost summary.
-All calculation logic lives in backend/phases/p7_financial.py — this
-module only collects inputs and displays results.
+Elements) — all always shown, since the source cost model has no gate on
+any of these by Water Quality's application type. Dust Suppression and
+Concrete Kerb + Elements each have an "included" checkbox so an engineer
+can exclude either without losing entered figures. All calculation logic
+lives in backend/phases/p7_financial.py — this module only collects
+inputs and displays results.
 """
 
 import altair as alt
@@ -31,10 +29,8 @@ from ..theme import COLOUR_PRIMARY, COLOUR_SUCCESS, COLOUR_WARNING, COLOUR_NEUTR
 
 def _persisted_expander(label: str, key: str):
     """st.expander bound to a session_state key so it stays open across a
-    rerun triggered by a widget inside it — a bare `expanded=` literal is
-    re-evaluated on every rerun and would otherwise snap shut as soon as
-    the user touches anything inside (see frontend/pages/p2_rwmp.py for
-    the same fix). Defaults to closed."""
+    rerun triggered by a widget inside it (a bare `expanded=` literal would
+    snap shut on any interaction — see p2_rwmp.py). Defaults to closed."""
     st.session_state.setdefault(key, False)
     return st.expander(label, expanded=st.session_state[key], key=key)
 
@@ -95,11 +91,9 @@ def page_financial(results):
 
     d = gi("financial")
     D = C.FINANCIAL_DEFAULTS
-    # One-way defaults only: read Phase 5's soil_to_financial (if the
-    # engineer has filled it in) to seed these keys' FIRST value. Once a key
-    # exists in `d` (including after this), setdefault below never
-    # overwrites it again — so nothing here ever writes back to Phase 5, and
-    # editing a value on this page never affects it either.
+    # One-way defaults only: seeds each key's FIRST value from Phase 5's
+    # soil_to_financial. setdefault never overwrites an existing key, so
+    # nothing here writes back to Phase 5, and edits here don't affect it.
     soil_defaults = st.session_state.get("soil_to_financial")
     for k in _SCALAR_KEYS:
         d.setdefault(k, D[k])
@@ -114,10 +108,9 @@ def page_financial(results):
                     value = default
             d.setdefault(f"layer_{name}_{field}", value)
 
-    # Apply any distance calculated by _address_lookup() on the previous
-    # run, BEFORE the distance number_input widgets below are instantiated
-    # this run — writing to a widget's session_state key after it has
-    # already been instantiated this run raises a StreamlitAPIException.
+    # Apply any distance from _address_lookup()'s previous run BEFORE the
+    # number_input widgets below are instantiated — writing to a widget's
+    # session_state key after instantiation raises a StreamlitAPIException.
     for key in ("potable_distance_km", "recycled_distance_km"):
         pending_key = f"_pending_{key}"
         if pending_key in st.session_state:
@@ -129,9 +122,6 @@ def page_financial(results):
     _pavement_profile_section(d)
     total_width_m = _road_geometry_section(d)
     _transport_section(d)
-    # Dust suppression and concrete kerb+elements are always shown and always
-    # included in the combined project volume — the source model has no
-    # gate on either by Water Quality's selected application type.
     _dust_suppression_section(d, total_width_m)
     _concrete_mixing_section(d)
 
@@ -254,10 +244,9 @@ def _road_geometry_section(d):
 
 
 def _render_route_map(role: str, route: dict):
-    """One folium map for a single lookup: water-source marker, site marker,
-    driving route polyline, auto-fit to its own bounds. Degrades to
-    markers-only (no crash) if the route has no usable geometry — missing
-    or malformed geometry from ORS never blocks the distance result itself."""
+    """One folium map for a single lookup: source marker, site marker,
+    route polyline, auto-fit to bounds. Degrades to markers-only if the
+    route has no usable geometry — never blocks the distance result."""
     origin, destination = route["origin"], route["destination"]
     geometry = route.get("geometry") or []
 
@@ -288,11 +277,11 @@ def _render_route_map(role: str, route: dict):
 
 def _address_lookup(role: str, d: dict, distance_key: str):
     """Optional 'Calculate from addresses' expander for one distance field
-    (role is 'potable' or 'recycled'). Entirely hidden when ORS isn't
-    configured — the manual number_input above is always the fallback.
-    Stores its result in session_state (`_ors_route_<role>`) so the map can
-    be re-rendered — and compared against the other lookup — without a
-    fresh ORS call; see the Compare button in _transport_section()."""
+    (role is 'potable' or 'recycled'). Hidden when ORS isn't configured —
+    the manual number_input above is always the fallback. Stores its
+    result in session_state (`_ors_route_<role>`) so the map can be
+    re-rendered/compared later without a fresh ORS call (see the Compare
+    button in _transport_section())."""
     if not C.ORS_ENABLED:
         return
 
@@ -331,10 +320,9 @@ def _address_lookup(role: str, d: dict, distance_key: str):
                                 "origin_label": origin_addr, "destination_label": dest_addr,
                             }
                             st.session_state["_ors_last_run"] = role
-                            # The number_input above has already been instantiated this
-                            # run, so neither `d[...]` nor its session_state key can be
-                            # set directly here — stash it as pending and rerun; the top
-                            # of page_financial() applies it before the widget renders.
+                            # number_input above is already instantiated this run, so
+                            # stash as pending and rerun — page_financial() applies it
+                            # before the widget renders next time.
                             st.session_state[f"_pending_{distance_key}"] = route["distance_km"]
                             st.session_state["_save_toast"] = (
                                 f"Driving distance calculated: {route['distance_km']:.1f} km "
@@ -345,10 +333,9 @@ def _address_lookup(role: str, d: dict, distance_key: str):
         if error:
             st.error(error)
 
-        # Default: only the map for the lookup just run is shown. The
-        # Compare button (once, after both lookups — see _transport_section)
-        # can additionally reveal the other one, reusing the stored result
-        # rather than calling ORS again.
+        # By default only the map for the lookup just run is shown; the
+        # Compare button (_transport_section) can reveal the other one too,
+        # reusing the stored result instead of calling ORS again.
         stored_route = st.session_state.get(f"_ors_route_{role}")
         if stored_route and (st.session_state.get("_ors_last_run") == role
                               or st.session_state.get("_ors_compare")):
@@ -396,11 +383,9 @@ def _transport_section(d):
                     "key at openrouteservice.org")
         c1, c2 = st.columns(2)
         with c1:
-            # setdefault (not value=) — a pending ORS-calculated distance
-            # may already have set this session_state key above; passing
-            # value= as well would trigger Streamlit's "widget created with
-            # a default value but also had its value set via the Session
-            # State API" warning.
+            # setdefault, not value= — a pending ORS distance may already
+            # have set this key, and passing value= too would trigger
+            # Streamlit's "value set via both default and Session State" warning.
             st.session_state.setdefault("financial_potable_distance_km", float(d["potable_distance_km"]))
             d["potable_distance_km"] = st.number_input(
                 "Distance site to potable source (km)", min_value=0.0,
@@ -435,11 +420,10 @@ def _transport_section(d):
                 if d.get("area_type") in area_types else area_types.index("Urban"),
                 horizontal=True, key="financial_area_type")
         if new_area_type != d.get("area_type"):
-            # Area type just changed — reset the speed to that type's
-            # default. Both `d` AND the number_input's session_state key
-            # must be updated here, before that widget is instantiated
-            # below — passing a new `value=` alone has no effect once a
-            # widget's key already holds a value in session_state.
+            # Area type changed — reset speed to its default. Must update
+            # both `d` and the widget's session_state key before that
+            # widget is instantiated below; `value=` alone won't override
+            # an existing session_state entry.
             d["avg_speed_kmh"] = C.AREA_TYPE_SPEEDS[new_area_type]
             st.session_state["financial_avg_speed_kmh"] = d["avg_speed_kmh"]
         d["area_type"] = new_area_type
@@ -460,12 +444,10 @@ def _dust_suppression_section(d, total_width_m):
             key="financial_dust_suppression_included")
         disabled = not d["dust_suppression_included"]
 
-        # Auto-fill pattern: each selectbox is compared against a hidden
-        # "_source" key (not the persisted field itself, which is already
-        # pre-seeded by setdefault() and so would never register as
-        # "changed" on a brand-new assessment's first render) so the mapped
-        # default is applied both on first render and on every later
-        # change, without overwriting a manual edit in between.
+        # Each selectbox is compared against a hidden "_source" key (not the
+        # persisted field, which setdefault() already seeds) so the mapped
+        # default applies on first render and on every later change,
+        # without overwriting a manual edit in between.
         c1, c2 = st.columns(2)
         with c1:
             site_options = list(C.DUST_SITE_CONDITIONS_WATER_L_M2.keys())
@@ -492,8 +474,8 @@ def _dust_suppression_section(d, total_width_m):
         d["temperature_conditions"] = new_temperature_conditions
         d["_dust_applications_source"] = new_temperature_conditions
 
-        # Surface area: auto-computed from Road Geometry's total width ×
-        # road length, re-applied whenever that product changes.
+        # Auto-computed from Road Geometry's total width × road length,
+        # re-applied whenever that product changes.
         geometry_area_m2 = total_width_m * d["road_length_m"]
         if geometry_area_m2 != d.get("_dust_geometry_area_m2"):
             d["surface_area_m2"] = geometry_area_m2
@@ -501,8 +483,7 @@ def _dust_suppression_section(d, total_width_m):
         d["_dust_geometry_area_m2"] = geometry_area_m2
 
         # No `value=` on these three — the trigger blocks above already set
-        # session_state before each widget is created, so `value=` would
-        # only conflict with it (see the distance-field comment above).
+        # session_state before each widget is created (see comment above).
         c1, c2, c3 = st.columns(3)
         with c1:
             d["surface_area_m2"] = st.number_input(
@@ -649,9 +630,7 @@ def _input_review(d, total_width_m):
 
 
 def _net_position_line(net: float, scenario_label: str) -> str:
-    """One-line plain-language readout of a signed net-position figure —
-    lets the reader skip mentally subtracting savings from the transport
-    cost difference themselves."""
+    """Plain-language readout of a signed net-position figure."""
     if net > 0:
         return f"Recycled water **saves ${net:,.0f}** compared to potable under {scenario_label} pricing."
     if net < 0:
@@ -660,13 +639,8 @@ def _net_position_line(net: float, scenario_label: str) -> str:
 
 
 def _water_savings_line(savings: float, scenario_label: str) -> str:
-    """Same plain-language pattern as _net_position_line(), for the water-
-    cost-only savings figure (transport isn't in this number — see Net
-    result below for the combined figure). ``savings`` is always
-    potable_cost - recycled_cost; the sign alone already tells us which
-    direction is cheaper, so there's no need for a second "savings if
-    potable were chosen instead" figure — that would just be this same
-    number with the sign flipped, not a new fact."""
+    """Water-cost-only savings figure (excludes transport — see Net result
+    for the combined figure). ``savings`` is potable_cost - recycled_cost."""
     if savings > 0:
         return f"Recycled water **saves ${savings:,.0f}** on water costs alone under {scenario_label} pricing."
     if savings < 0:
@@ -676,9 +650,8 @@ def _water_savings_line(savings: float, scenario_label: str) -> str:
 
 # ---------------------------------------------------------------------------
 # "?" tooltip formula breakdowns for the Cost summary metrics below — each
-# mirrors backend.phases.p7_financial's own formula exactly (same terms,
-# same order), substituting this run's real input values, so an engineer can
-# see precisely how a number was reached without leaving the page.
+# mirrors backend.phases.p7_financial's own formula, with this run's real
+# values substituted in, so an engineer can see how a number was reached.
 # ---------------------------------------------------------------------------
 
 def _pavement_formula_help(fa: dict, d: dict) -> str:
@@ -896,9 +869,8 @@ def _cost_summary_section(fa: dict, d: dict):
 
 def _render_breakeven_chart(bc: dict):
     """Line chart of total project cost vs recycled-source trucking
-    distance (potable_distance_km and every other input stay fixed while
-    this sweeps recycled_distance_km — see
-    backend.recycled_distance_breakeven_curve's docstring for why)."""
+    distance; every other input stays fixed while this sweeps
+    recycled_distance_km (see backend.recycled_distance_breakeven_curve)."""
     curve = pd.DataFrame(bc["curve"]).melt(
         id_vars="distance_km",
         value_vars=["recycled", "potable", "potable_drought"],
@@ -912,10 +884,8 @@ def _render_breakeven_chart(bc: dict):
     curve["series"] = curve["series"].map(series_names)
 
     BREAKEVEN_LABEL = "Break-even distance"
-    # One shared colour/dash scale, covering both the three cost curves and
-    # the break-even marker below, so layering them produces a single
-    # combined legend instead of an unlabelled grey line the user has to
-    # guess at.
+    # Shared colour/dash scale across the cost curves and the break-even
+    # marker so layering produces one combined legend, not an unlabelled line.
     domain = [series_names["recycled"], series_names["potable"], series_names["potable_drought"],
               BREAKEVEN_LABEL]
     range_ = [COLOUR_SUCCESS, COLOUR_PRIMARY, COLOUR_WARNING, COLOUR_NEUTRAL]
@@ -967,19 +937,16 @@ def _render_breakeven_chart(bc: dict):
             strokeDash=alt.StrokeDash("series:N", sort=domain,
                                       scale=alt.Scale(domain=domain, range=dash), legend=None),
         )
-        # Distance labels directly on the chart (exact km), on top of the
-        # shared legend explaining what the grey dashed line itself means.
+        # Exact-km labels directly on the chart, alongside the shared legend.
         be_labels = alt.Chart(be_df).mark_text(
             align="left", dx=6, dy=-6, color=COLOUR_NEUTRAL, fontWeight="bold", fontSize=11,
         ).encode(x="distance_km:Q", y=alt.value(12), text="label:N")
         layers += [be_rules, be_labels]
 
     # resolve_legend(color="shared") is required, not cosmetic: the
-    # break-even rule layer only encodes x (a full-height vertical line),
-    # and layering that with the x+y line chart makes Vega-Lite silently
-    # drop the legend entirely under its default resolution — even though
-    # every layer requests the same "Series" legend. Forcing it back to
-    # "shared" is the documented workaround.
+    # break-even layer only encodes x, and layering it with the x+y line
+    # chart makes Vega-Lite silently drop the legend under default
+    # resolution. This is the documented workaround.
     chart = (alt.layer(*layers).properties(height=340)
              .configure_view(strokeWidth=0)
              .resolve_legend(color="shared"))

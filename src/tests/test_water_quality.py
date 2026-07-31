@@ -43,9 +43,8 @@ def test_concrete_conditional_when_untested():
 
 
 def test_concrete_shows_all_checks_even_after_low_strength_reject():
-    """A REJECT on Table 2.1 (strength) must not hide the Table 2.2
-    impurities, turbidity, or Table 2.3 checks — the engineer needs the
-    full picture in one pass, not just the first failure."""
+    """A REJECT on Table 2.1 (strength) must not hide the Table 2.2/2.3
+    checks — the engineer needs the full picture in one pass."""
     inp = dict(CONCRETE_VALID, compression_strength_pct=80,
                conc_tds=500, conc_chloride=50)
     r = assess_water_quality(inp)

@@ -1,10 +1,5 @@
-"""
-frontend/app.py
-================
-Streamlit UI entry point. Wires together session state, styling, the
-sidebar, and page routing. NO decision logic lives here — see backend/ for
-the phase rules.
-"""
+"""frontend/app.py — Streamlit entry point: wires session state, styling,
+sidebar, and page routing. Decision logic lives in backend/, not here."""
 
 from pathlib import Path
 
@@ -21,10 +16,8 @@ from .refdata import get_reference_data, PHASE_BY_ID
 from .theme import badge
 from .pages import PAGE_FUNCS, page_setup, page_summary, page_compare, page_save_export
 
-# Anchored to this file's own location, not the process's working directory
-# — Streamlit Cloud does not guarantee the working directory is src/, so a
-# plain "frontend/images/..." string resolves incorrectly there even though
-# it happens to work locally when the app is launched from inside src/.
+# Anchored to this file's location — Streamlit Cloud doesn't guarantee cwd
+# is src/, so a relative "frontend/images/..." path can break there.
 IMAGES_DIR = Path(__file__).parent / "images"
 
 st.set_page_config(
@@ -114,9 +107,9 @@ def main():
 
     page = st.session_state.page
     current_phase_id = _current_phase_id()
-    # Must run before the page-routing block below — pushing a synced value
-    # into a phase's widgets is only safe before that phase's own widgets
-    # are instantiated in this run (see pavement_sync.py's docstring).
+    # Must run before page routing — pushing a synced value into a phase's
+    # widgets is only safe before those widgets are instantiated (see
+    # pavement_sync.py).
     sync_pavement_profile()
     sidebar()
 
@@ -129,17 +122,12 @@ def main():
     section = (_section_for_phase(current_phase_id)
                if C.USE_GROUPED_SECTIONS and current_phase_id else None)
 
-    # Reserve the section banner's and progress bar's spots now, but fill
-    # them in with fresh results AFTER the page below has run — the page is
-    # what writes this run's just-changed widget values into
-    # st.session_state.inputs, so computing results before it runs would
-    # show last run's (stale) state. On phase pages the status strip is a
-    # fixed panel docked to the right of the viewport (right_panel_slot,
-    # independently scrollable) instead of the inline top-of-page strip —
-    # Summary shows neither, since it already has its own "Phase outcomes"
-    # recap further down the page, and Save & Export shows neither either,
-    # so its "Save & export" block (shared with the bottom of Summary via
-    # summary.save_export_block) presents identically in both places.
+    # Reserve these slots now, fill them AFTER the page runs below — the
+    # page is what writes this run's widget values into
+    # st.session_state.inputs, so computing results any earlier would show
+    # stale state. Phase pages get a fixed right-hand status panel instead
+    # of the inline strip; Summary/Save & Export get neither (Summary has
+    # its own phase-outcomes recap; Save & Export shares that block).
     no_strip_pages = ("Summary", "Save & Export")
     section_slot = st.empty() if section else None
     inline_progress_slot = st.empty() if (not current_phase_id and page not in no_strip_pages) else None
@@ -157,9 +145,8 @@ def main():
     elif current_phase_id:
         PAGE_FUNCS[current_phase_id](current_results())
 
-    # After the page above has written this run's widget values into
-    # st.session_state.inputs — same ordering reason as the section
-    # banner/progress bar below.
+    # Runs after the page writes this run's widget values — same ordering
+    # reason as above.
     autosave_progress()
 
     if section_slot is not None:

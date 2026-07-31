@@ -55,8 +55,7 @@ def page_whs(results):
             d.get("contact_risk", C.CONTACT_RISK_LEVELS[0])),
         help=_CONTACT_RISK_HELP.get(_current_contact_risk),
         key="whs_contact_risk")
-    # "Workers and public" gets a standing warning box, not just a hover
-    # tooltip — kept visible rather than folded into help= above.
+    # "Workers and public" gets a standing warning, not just a hover tooltip.
     if d["contact_risk"] not in ("Workers only", "None expected"):
         st.warning(f"{C.WHS_TREATMENT_NOTE}\n\n{C.NSW_HEALTH_NOTE}")
 

@@ -3,16 +3,9 @@ backend/phases/p6_whs.py
 ========================
 PHASE 6 — WORKER HEALTH & SAFETY (WHS)
 
-No hard reject at this phase — WHS shortfalls are remediable (CONDITIONAL,
-action-before-works). It's a strict-liability regime (no intention needed to
-prove guilt), so every gate below holds its own state at CONDITIONAL until
-resolved. Gate order matches the phase 6 flowchart:
-  1. Proximity to sensitive receptors (buffer zone) — always CONDITIONAL,
-     no PROCEED path; see the check below for why.
-  2. Application method -> spraying needs a pre-application wind/weather check.
-  3. Human contact risk level.
-  4. Treatment standard (Phase 3's water class) vs the contact-risk level.
-  5. The WHS notification/PPE/SWMS/signage checklist.
+No hard reject — WHS shortfalls are remediable (CONDITIONAL,
+action-before-works). It's a strict-liability regime, so every gate holds
+CONDITIONAL until resolved rather than REJECT.
 """
 
 from __future__ import annotations
@@ -34,8 +27,8 @@ def assess_whs(inp: dict, ctx: dict = None) -> PhaseResult:
     g = PhaseResult(phase_id="whs", mandatory=True)
 
     # --- Proximity to sensitive receptors (buffer zone) ---------------------
-    # Always CONDITIONAL — only an indicative range by water class exists,
-    # not a real distance to test — see config.AGWR_BUFFER_ZONE_LIMITATION_NOTE.
+    # Always CONDITIONAL — only an indicative range by water class exists, not
+    # a real distance to test (see config.AGWR_BUFFER_ZONE_LIMITATION_NOTE).
     method = inp.get("application_method", C.APPLICATION_METHODS[0])
     selected_class = ((ctx or {}).get("water_quality", {}) or {}).get("water_class")
     buffer_range = C.AGWR_BUFFER_ZONE_RANGE_METRES.get(selected_class)
@@ -118,8 +111,7 @@ def assess_whs(inp: dict, ctx: dict = None) -> PhaseResult:
             f"{contact.lower()} contact."))
 
     # --- WHS notification / PPE / SWMS / signage checklist ------------------
-    # One combined check, not 5 separate ones — the detail text below
-    # enumerates all five, not just the missing one(s).
+    # One combined check, not 5 separate ones.
     all_confirmed = all(inp.get(key) for key, _ in C.WHS_CHECKS)
     if all_confirmed:
         g.checks.append(CheckResult(

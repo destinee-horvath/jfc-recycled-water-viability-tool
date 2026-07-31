@@ -49,8 +49,8 @@ def test_proceed_when_ponding_risk_and_containment_documented():
 
 
 def test_proceed_when_no_ponding_risk_regardless_of_containment():
-    """No identified risk PROCEEDs directly — containment is never even
-    asked about (FR4.7's skip-the-second-question behaviour)."""
+    """Containment is never even asked about — FR4.7's skip-the-second-
+    question behaviour."""
     inp = dict(VALID, ponding_overflow_risk=False, containment_documented=False)
     r = assess_site_runoff(inp)
     assert r.state == "PROCEED"
@@ -70,9 +70,9 @@ def test_never_rejects_even_in_worst_case():
 
 
 def test_proceed_when_not_extraction_or_processing_regardless_of_tonnes():
-    """Cl 35 applies to extraction/on-site processing of materials only —
-    NOT onsite concrete batching, general earthworks, compacting road base,
-    or maintenance, regardless of tonnage moved."""
+    """Cl 35 applies to extraction/on-site processing only — not concrete
+    batching, general earthworks, or road-base compaction, regardless of
+    tonnage."""
     inp = dict(VALID, involves_extraction_or_processing=False, project_tonnes=999999)
     r = assess_site_runoff(inp)
     check = next(c for c in r.checks
@@ -83,10 +83,8 @@ def test_proceed_when_not_extraction_or_processing_regardless_of_tonnes():
 
 
 def test_conditional_when_completely_untouched():
-    """An engineer who never opens Phase 4 must NOT see a silent PROCEED —
-    the untouched waterway-distance and slope/drainage fields now always
-    generate their own CONDITIONAL, so the phase as a whole reads as
-    action-needed rather than confirmed clean."""
+    """No silent PROCEED for an untouched phase — waterway-distance and
+    slope/drainage fields default to their own CONDITIONAL."""
     r = assess_site_runoff({})
     assert r.state == "CONDITIONAL"
 
@@ -143,8 +141,7 @@ def test_proceed_when_slope_confirmed_no():
 
 def test_slope_accepts_legacy_boolean_values():
     """CSVs saved before this field became a tri-state stored plain
-    True/False — must still be interpreted correctly, not silently
-    downgraded to Unconfirmed."""
+    True/False — must still be interpreted correctly."""
     inp = dict(VALID, slope_toward_waterway=True)
     r = assess_site_runoff(inp)
     check = next(c for c in r.checks
@@ -165,7 +162,6 @@ def test_proceed_when_sensitive_environment_left_at_default():
 
 
 def test_schedule_1_check_runs_before_epl_check():
-    """Confirms Schedule 1 runs before EPL — this pins that ordering."""
     inp = dict(VALID, involves_extraction_or_processing=True,
                project_tonnes=999999, in_regulated_area=True)
     r = assess_site_runoff(inp)

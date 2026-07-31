@@ -3,32 +3,23 @@ backend/phases/p7_financial.py
 ========================
 PHASE — FINANCIAL FEASIBILITY (never a hard reject)
 
-Ported term-for-term from the original source cost model — treated as
-ground truth. Quirks in the source model that look like bugs are
-implemented literally, not "corrected" — each is flagged with a comment at
-the point it's implemented.
+Ported term-for-term from the original source cost model, treated as ground
+truth — quirks that look like bugs are implemented literally, not
+"corrected" (each flagged where implemented).
 
-Combined project volume (§6) is pavement + dust suppression + concrete
-kerb/elements, summed together with no branching by Water Quality's
-selected application type anywhere. (An earlier version of this module
-gated dust-suppression/concrete volume behind application_type — that was
-based on an unverified assumption and has been removed; the source model
-has no such gate.) Each of the three components can still be individually
-excluded from a job via its own "included" flag (dust_suppression_included,
-concrete_included, and per-layer for pavement) — a tool usability feature
-with no equivalent in the source model, not a Water-Quality-driven gate.
+Combined project volume (§6) = pavement + dust suppression + concrete,
+always summed with no branching on Water Quality's application type (a
+prior application_type gate was removed — unverified assumption, not in the
+source model). Each component still has its own "included" toggle — a tool
+usability feature, not a source-model gate.
 
-Delivery days split into two additive parts (§10): pavement + concrete are
-trucked and divided by the fleet's daily capacity (delivery_days_trucked);
-dust suppression has its own independent day count (project_duration_days,
-a direct input) added on top, not divided into the trucked-volume
-calculation.
+Delivery days (§10) are additive: trucked pavement+concrete volume divided
+by fleet daily capacity, plus dust suppression's own independent day count
+on top (not merged into the trucked-volume division).
 
-Water costs (§7) are rounded up to whole dollars, matching the source
-model's own rounding. Everything else (volumes, per-day transport costs,
-the break-even chart) stays full precision — the source model doesn't
-round those, and the break-even chart specifically needs continuous values
-to find a crossing point.
+Water costs (§7) round up to whole dollars, matching the source model.
+Everything else stays full precision — the break-even chart needs
+continuous values to find a crossing point.
 """
 
 from __future__ import annotations
@@ -44,8 +35,7 @@ _LAYER_NAMES = ("subgrade", "subbase", "base")
 def _layer_volume_kL(layer: dict, total_width_m: float, road_length_m: float) -> float:
     """Water needed to bring one pavement layer from current to optimum
     moisture content, across the full road width and length. Matches the
-    source model exactly (same terms, different multiplication order —
-    mathematically identical)."""
+    source model (same terms, different but equivalent multiplication order)."""
     return (((layer["omc_pct"] - layer["mc_pct"]) / 100)
             * layer["thickness_m"] * total_width_m * road_length_m
             * layer["density_kg_m3"] / 1000)
@@ -54,19 +44,15 @@ def _layer_volume_kL(layer: dict, total_width_m: float, road_length_m: float) ->
 def _transport_cost_per_day(distance_km: float, num_trucks: float, trips_per_truck: float,
                              avg_speed_kmh: float, hours_onsite: float, hire_rate_per_hr: float,
                              fuel_efficiency: float, diesel_price: float) -> float:
-    """Whole-fleet daily hire + fuel cost for one source. Matches the
-    source model exactly, including its quirks:
-      * trips_per_truck multiplies into travel hours (and therefore fuel)
-        but NOT hours_onsite.
-      * Fuel cost uses a hardcoded 50 (assumed km/h) rather than the
-        area-type-dependent avg_speed_kmh; not linked to the area-type
-        speed selector. Confirm this assumption before changing it — this
-        silently misprices fuel whenever the selected area type's speed
-        isn't 50 (i.e. whenever it isn't "Urban").
+    """Whole-fleet daily hire + fuel cost for one source. Matches the source
+    model's quirks exactly:
+      * trips_per_truck multiplies travel hours (and fuel) but NOT hours_onsite.
+      * Fuel cost uses a hardcoded 50 km/h, not the actual avg_speed_kmh —
+        this silently misprices fuel whenever area type isn't "Urban" (the
+        only type where the real speed happens to be 50). Confirm before changing.
 
-    ``hire_rate_per_hr`` is truck-and-driver only and excludes fuel, so the
-    two additive terms below (``total_hours * hire_rate_per_hr`` and
-    ``fuel_costs``) are separate cost components, not a double-count.
+    hire_rate_per_hr excludes fuel, so total_hours*hire_rate_per_hr and
+    fuel_costs are separate components, not a double-count.
     """
     travel_hours_per_truck = ((distance_km / avg_speed_kmh) * 2 * trips_per_truck
                                if avg_speed_kmh > 0 else 0.0)
@@ -97,9 +83,8 @@ def financial_analysis(inp: dict) -> dict:
         recycled_cost_normal = float(inp.get("recycled_cost_normal", D["recycled_cost_normal"]) or 0)
 
     # --- Pavement profile (§2/§3) ----------------------------------------------
-    # Flat per-field keys (layer_<name>_<field>), not a nested dict — inputs
-    # go through persistence.py's flat CSV round-trip, which only preserves
-    # scalars/lists one level deep, not nested dicts.
+    # Flat per-field keys (layer_<name>_<field>), not a nested dict — persistence.py's
+    # CSV round-trip only preserves scalars/lists one level deep.
     layers = {}
     layer_included = {}
     for name in _LAYER_NAMES:
@@ -117,11 +102,8 @@ def financial_analysis(inp: dict) -> dict:
     road_length_m = float(inp.get("road_length_m", D["road_length_m"]) or 0)
     total_width_m = (num_lanes * lane_width_m) + (num_shoulders * shoulder_width_m)
 
-    # Volumes are always computed for every layer (informational, even when
-    # excluded via the "included" checkbox — a tool feature the source
-    # model has no equivalent of, since it has no mechanism to exclude a
-    # layer at all; kept since it's a genuine usability improvement, not a
-    # bug).
+    # Volumes are always computed per layer (informational), even when a
+    # layer is excluded via "included" — a tool feature not in the source model.
     layer_volumes_kL = {
         name: _layer_volume_kL(layer, total_width_m, road_length_m)
         for name, layer in layers.items()
@@ -144,9 +126,8 @@ def financial_analysis(inp: dict) -> dict:
     default_speed = C.AREA_TYPE_SPEEDS.get(area_type, C.AREA_TYPE_SPEEDS[D["area_type"]])
     avg_speed_kmh = float(inp.get("avg_speed_kmh", default_speed) or 0)
 
-    # --- Dust suppression (§4) — no application-type gate, but toggleable via
-    # "included" for jobs that don't use dust suppression at all (same
-    # pattern as a pavement layer's "included") ---------------------------------
+    # --- Dust suppression (§4) — no application-type gate; toggleable via
+    # "included" for jobs that don't use it, same pattern as pavement layers ---
     dust_suppression_included = bool(inp.get("dust_suppression_included", D["dust_suppression_included"]))
     surface_area_m2 = float(inp.get("surface_area_m2", D["surface_area_m2"]) or 0)
     water_per_m2_L = float(inp.get("water_per_m2_L", D["water_per_m2_L"]) or 0)
@@ -156,8 +137,7 @@ def financial_analysis(inp: dict) -> dict:
 
     total_water_per_day_kL = (surface_area_m2 * water_per_m2_L * applications_per_day) / 1000
     effective_water_kL = total_water_per_day_kL * (effective_area_pct / 100)
-    # Always computed (informational, e.g. for the input-review/tooltip
-    # figures), even when excluded from the totals below.
+    # Always computed (informational), even when excluded from totals below.
     dust_suppression_computed_kL = effective_water_kL * project_duration_days
     total_dust_suppression_kL = dust_suppression_computed_kL if dust_suppression_included else 0.0
 
@@ -173,7 +153,7 @@ def financial_analysis(inp: dict) -> dict:
         inp.get("additional_concrete_volume_m3", D["additional_concrete_volume_m3"]) or 0)
 
     kerb_concrete_volume_m3 = kerb_volume_per_m * road_length_m
-    # Always computed (informational), even when excluded from the totals below.
+    # Always computed (informational), even when excluded from totals below.
     concrete_water_computed_kL = (kerb_concrete_volume_m3 + additional_concrete_volume_m3) * water_volume_fraction
     concrete_water_kL = concrete_water_computed_kL if concrete_included else 0.0
 
@@ -189,9 +169,8 @@ def financial_analysis(inp: dict) -> dict:
         hire_rate_per_hr, fuel_efficiency, diesel_price)
 
     # --- Delivery days (§10) ------------------------------------------------------
-    # Pavement + concrete are trucked and divided by the fleet's daily
-    # capacity; dust suppression's own day count is added on top rather
-    # than divided in — matches the source model exactly.
+    # Pavement + concrete divided by fleet daily capacity; dust suppression's
+    # own day count added on top rather than divided in — matches source model.
     volume_per_day_kL = num_trucks * trips_per_truck * truck_capacity_kL
     trucked_volume_kL = total_pavement_volume_kL + concrete_water_kL
     delivery_days_trucked = (math.ceil(trucked_volume_kL / volume_per_day_kL)
@@ -199,8 +178,7 @@ def financial_analysis(inp: dict) -> dict:
     dust_suppression_days = project_duration_days if dust_suppression_included else 0.0
     total_delivery_days = delivery_days_trucked + dust_suppression_days
 
-    # --- Water costs (§7) — rounded up to whole dollars, matching the source ----
-    # model's own rounding exactly.
+    # --- Water costs (§7) — rounded up to whole dollars, matching the source model ---
     potable_water_cost_normal = math.ceil(combined_total_volume_kL * potable_cost_normal)
     potable_water_cost_drought = math.ceil(combined_total_volume_kL * potable_cost_drought)
     recycled_water_cost = math.ceil(combined_total_volume_kL * recycled_cost_normal)
@@ -215,11 +193,9 @@ def financial_analysis(inp: dict) -> dict:
     profit_drought = max(savings_drought - total_cost_difference, 0)
     loss_drought = max(total_cost_difference - savings_drought, 0)
 
-    # --- Continuous whole-of-project totals — NOT in the source model, kept -----
-    # only for the break-even chart (FR7.9), which needs a distance-varying
-    # continuous total to find a crossing point; the rounded, water-only
-    # figures above can't do that on their own since they don't vary with
-    # distance at all.
+    # --- Continuous whole-of-project totals — not in the source model; kept only
+    # for the break-even chart (FR7.9), which needs distance-varying totals to
+    # find a crossing point (the rounded water-only figures above don't vary with distance).
     potable_total_cost = (combined_total_volume_kL * potable_cost_normal
                            + potable_transport_cost_per_day * total_delivery_days)
     recycled_total_cost = (combined_total_volume_kL * recycled_cost_normal
@@ -293,22 +269,15 @@ def financial_analysis(inp: dict) -> dict:
 
 
 def recycled_distance_breakeven_curve(inp: dict, n_points: int = 40) -> dict:
-    """
-    Cost-vs-distance curve for the "Cost summary & break-even analysis"
-    chart. Potable and recycled have independent distance inputs, so
-    there's no single shared axis to sweep — this sweeps
-    ``recycled_distance_km`` only (holding every other input, including
-    ``potable_distance_km``, fixed),
-    since that's the distance an engineer can actually negotiate/shop
-    around on. Potable's totals are therefore flat reference lines here,
-    not because they're distance-independent in general, but because this
-    particular sweep doesn't touch potable_distance_km.
+    """Cost-vs-distance curve for the break-even chart. Sweeps only
+    ``recycled_distance_km`` (the distance an engineer can actually
+    negotiate), holding ``potable_distance_km`` fixed — so potable's totals
+    plot as flat reference lines here, not because they're distance-independent.
 
-    Every point re-runs ``financial_analysis()`` rather than re-deriving
-    the transport formula here, so the chart can never drift from what the
-    checks/summary actually show. Recycled's transport cost is linear in
-    distance, so the two break-even crossings are solved exactly from the
-    first and last sampled points rather than by curve-fitting.
+    Re-runs ``financial_analysis()`` per point rather than re-deriving the
+    formula, so the chart can't drift from the checks/summary. Recycled's
+    transport cost is linear in distance, so break-even is solved exactly
+    from the first/last sampled points rather than curve-fitting.
     """
     current_distance = float(inp.get("recycled_distance_km", C.FINANCIAL_DEFAULTS["recycled_distance_km"]) or 0)
     max_distance = max(current_distance * 2, 20.0)

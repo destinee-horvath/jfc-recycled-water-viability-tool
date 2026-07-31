@@ -1,9 +1,5 @@
-"""
-frontend/state.py
-==================
-Session-state management: initial state, per-phase input dicts, running the
-assessment, and the Next/Save actions shown at the bottom of each phase page.
-"""
+"""frontend/state.py — session-state management: initial state, per-phase
+input dicts, running the assessment, and the Next/Save phase-page actions."""
 
 from datetime import datetime
 
@@ -30,11 +26,11 @@ def gi(phase_id):
 
 def reset_widget_state():
     """
-    Clear every per-widget session-state key (all but the core ``inputs``/
-    ``meta``/``page``/``completed_phases``). A keyed widget ignores a fresh
-    ``value=`` once Streamlit has recorded state for that key, so this must
-    run before reassigning ``inputs``/``meta`` on reset or after a load,
-    followed by ``st.rerun()`` — otherwise widgets re-render stale values.
+    Clear every per-widget key (all but ``inputs``/``meta``/``page``/
+    ``completed_phases``). A keyed widget ignores a fresh ``value=`` once
+    Streamlit has recorded state for that key, so this must run before
+    reassigning ``inputs``/``meta`` on reset or load, then ``st.rerun()``
+    — otherwise widgets re-render stale values.
     """
     keep = {"inputs", "meta", "page", "completed_phases"}
     for key in list(st.session_state.keys()):
@@ -64,31 +60,25 @@ def _current_progress_record():
 
 
 def _save_current_progress():
-    """Writes to the SERVER's own disk (config.SAVE_DIR) — useful when this
-    app is run locally or self-hosted (the server IS the user's machine),
-    but on a remote deployment (e.g. Streamlit Community Cloud) that disk
-    belongs to the host, not the visitor, and is wiped on restart. Use the
-    download button below to get a copy onto the visitor's own computer
-    regardless of where the app is hosted."""
+    """Writes to the server's own disk (config.SAVE_DIR) — fine when
+    self-hosted, but on a remote deployment (e.g. Streamlit Community
+    Cloud) that disk belongs to the host and is wiped on restart. The
+    download button below gets a copy onto the visitor's own machine
+    regardless of hosting."""
     rec, fname = _current_progress_record()
     path = B.save_assessment(rec, fname)
     st.session_state["_save_toast"] = f"Saved to {path}"
 
 
 def autosave_progress():
-    """Silently writes current progress to saved_assessments/ on every
-    rerun — called once from app.main() after the active page has updated
-    st.session_state.inputs, so it's always saving this run's latest
-    values, not last run's. Skips a completely empty session (nothing
-    entered anywhere yet) so a fresh visit doesn't immediately create a
-    junk file. Deliberately silent (no toast) — the explicit "Save current
-    progress" button above remains the one that confirms itself to the
-    user; autosave is a safety net, not an action they took.
-
-    Same server-disk caveat as _save_current_progress(): this protects
-    against an accidental refresh or closed tab, not against the server's
-    own disk being wiped (e.g. a Streamlit Community Cloud restart) — see
-    the download button and warning in render_phase_actions() below.
+    """Silently writes progress to saved_assessments/ on every rerun.
+    Called from app.main() after the active page updates
+    st.session_state.inputs, so it saves this run's latest values, not
+    last run's. Skips a fully empty session so a fresh visit doesn't
+    create a junk file. Deliberately silent — it's a safety net against
+    an accidental refresh/closed tab, not a substitute for the explicit
+    "Save" button, and shares _save_current_progress()'s server-disk
+    caveat (see render_phase_actions() below).
     """
     if not any(st.session_state.inputs.values()):
         return

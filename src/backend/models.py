@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# Ordering used to roll many check states up into one phase/verdict state.
-# Higher index = "worse" / more blocking.
+# Severity ordering for rollup; higher = worse/more blocking.
 _SEVERITY = {"NA": 0, "PROCEED": 1, "CONDITIONAL": 2, "REJECT": 3}
 _SEVERITY_INV = {v: k for k, v in _SEVERITY.items()}
 
@@ -20,9 +19,8 @@ class CheckResult:
     state: str          # PROCEED | CONDITIONAL | REJECT | NA
     reference: str = ""
     detail: str = ""
-    # Input dict key this check evaluates (e.g. "conc_sugar"), letting the
-    # frontend colour that field's input box by this check's state. Left
-    # blank for checks with no single field (e.g. compound/derived checks).
+    # Input key this check evaluates, so the frontend can colour that field.
+    # Blank for compound/derived checks with no single field.
     key: str = ""
 
 

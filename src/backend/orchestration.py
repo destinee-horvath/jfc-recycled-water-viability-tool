@@ -1,14 +1,11 @@
 """
 backend/orchestration.py
 =========================
-ORCHESTRATION — run all phases, roll up per-check readiness.
+Run all phases, roll up per-check readiness.
 
-No single pass/fail verdict or numeric score is computed here by design —
-the blocking/pending/confirmed breakdown is the point, not a headline
-VIABLE/CONDITIONAL/NOT VIABLE judgment or a 0-100 score. Each phase's own
-state (PROCEED/CONDITIONAL/REJECT/NA) still exists and still rolls up
-per-section (section_rollup) — only the single overall app-wide verdict is
-gone.
+By design there's no single pass/fail verdict or score — only a
+blocking/pending/confirmed breakdown. Per-phase state still rolls up
+per-section via section_rollup().
 """
 
 from __future__ import annotations
@@ -20,15 +17,10 @@ from .phases import PHASE_FUNCS
 
 def run_assessment(inputs: dict[str, dict]) -> dict[str, PhaseResult]:
     """
-    Run all phases in the order given by config.PHASE_ORDER (flat 1-7, or
-    grouped, per config.USE_GROUPED_SECTIONS). Every phase always receives
-    the full `inputs` dict as its ctx regardless of order, so execution
-    order has no effect on any phase's own result — this only changes the
-    order results are computed in, not what they compute. Every phase is
-    always assessed and always editable — a REJECT anywhere is surfaced as a
-    checklist item via readiness_summary(), but it does not block the user
-    from working through the remaining phases. This is a decision-support
-    checklist, not a sequential gate.
+    Run all phases in config.PHASE_ORDER. Every phase gets the full `inputs`
+    dict as ctx, so order doesn't affect results. No phase blocks another —
+    a REJECT is surfaced via readiness_summary() but doesn't stop the user
+    working through the rest; this is a checklist, not a sequential gate.
     """
     results: dict[str, PhaseResult] = {}
     for pid in C.PHASE_ORDER:

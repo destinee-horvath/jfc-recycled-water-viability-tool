@@ -1,13 +1,9 @@
 """
 frontend/pages/__init__.py
 ============================
-Registry of phase pages. To add a new phase's UI:
-  1. Create frontend/pages/<name>.py with a ``page_<name>(results)`` function
-     (mirroring the backend/phases/<name>.py module of the same id).
-  2. Import it and add it to PAGE_FUNCS below, keyed by the same id used in
-     config.PHASES and backend.phases.PHASE_FUNCS.
-frontend/app.py drives navigation from config.PHASES + this registry alone —
-no other frontend code needs to change.
+Registry of phase pages. To add a new phase: create frontend/pages/<name>.py
+with a page_<name>(results) function, then import it and add it to PAGE_FUNCS
+below, keyed by the same id used in config.PHASES / backend.phases.PHASE_FUNCS.
 """
 
 from .setup import page_setup

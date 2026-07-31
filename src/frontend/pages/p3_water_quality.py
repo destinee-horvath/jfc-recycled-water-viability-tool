@@ -24,8 +24,7 @@ def page_water_quality(results):
         key="water_quality_application_type")
     app = d["application_type"]
 
-    # Kept as a general field — Phase 6 cross-checks it against the WHS
-    # contact-risk level, regardless of which table below applies.
+    # General field — Phase 6 cross-checks it against WHS contact-risk level.
     d["water_class"] = st.selectbox(
         "Intended AGWR water class", C.WATER_CLASSES,
         index=C.WATER_CLASSES.index(d.get("water_class", "Unclassified")),

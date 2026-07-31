@@ -44,11 +44,8 @@ def page_summary(results):
                 r = results[phase["id"]]
                 icon = _STATE_ICON.get(r.state, "➖")
                 colour = _STATE_MD_COLOUR.get(r.state, "gray")
-                # Icon folded into the label text itself, not passed via
-                # st.expander(icon=...) — that built-in slot gets replaced by
-                # Streamlit's own chevron once the expander is open, making
-                # the icon disappear. Embedding it in the label keeps it
-                # sitting right next to the arrow in both states.
+                # Icon is folded into the label, not st.expander(icon=...) —
+                # that slot gets replaced by Streamlit's chevron once open.
                 label = f"{icon} **{phase['label']}**  :{colour}[{r.state}]"
                 with st.expander(label, expanded=False):
                     c1, c2, c3 = st.columns(3)

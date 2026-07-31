@@ -52,8 +52,7 @@ def test_build_xlsx_returns_valid_workbook_bytes():
 
 
 def test_no_final_verdict_row():
-    """No headline verdict/score by design — just the per-check
-    blocking/pending/confirmed breakdown."""
+    """By design: no headline verdict/score, just blocking/pending/confirmed."""
     ws, results, readiness = _build(_inputs())
     values = [ws.cell(row=r, column=1).value for r in range(1, ws.max_row + 1)]
     assert "Final verdict" not in values
@@ -71,7 +70,7 @@ def test_readiness_section_headers_present_and_coloured():
 
 
 def test_phase_banner_row_coloured_by_phase_rolled_up_state():
-    # Force Phase 3 sulphate to REJECT (exceeds Table 3-1 limit).
+    # ew_sulphate=999 exceeds the Table 3-1 limit -> forces REJECT.
     ws, results, readiness = _build(_inputs(water_quality_overrides={"ew_sulphate": 999}))
     assert results["water_quality"].state == "REJECT"
 
@@ -87,9 +86,8 @@ def test_phase_banner_row_coloured_by_phase_rolled_up_state():
 
 
 def test_individual_check_row_coloured_by_its_own_state_not_phase_state():
-    """A REJECTed check inside an otherwise-REJECT phase must use the
-    REJECT tint; a PROCEED check in that same phase must use the PROCEED
-    tint, not the phase's rolled-up colour."""
+    """A REJECT check must use the REJECT tint and a PROCEED check the
+    PROCEED tint, even within the same REJECT-rolled-up phase."""
     ws, results, readiness = _build(_inputs(water_quality_overrides={"ew_sulphate": 999}))
     assert results["water_quality"].state == "REJECT"
 
@@ -112,17 +110,14 @@ def test_individual_check_row_coloured_by_its_own_state_not_phase_state():
 
 
 def test_handles_phase_with_no_checks_gracefully():
-    # financial with no inputs at all still returns a CONDITIONAL check
-    # ("insufficient inputs"), so use a genuinely NA-only scenario instead:
-    # this just confirms build_xlsx never raises regardless of phase state.
+    # build_xlsx must not raise regardless of phase state.
     ws, results, readiness = _build(_inputs())
-    assert ws.max_row > 10  # sanity: something was written
+    assert ws.max_row > 10
 
 
 def test_tint_blends_toward_white():
     base = "#E24B4A"
     tinted = _tint(base)
-    # Tinted colour's components should each be >= the original (lighter).
     orig = tuple(int(base.lstrip("#")[i:i+2], 16) for i in (0, 2, 4))
     new = tuple(int(tinted[i:i+2], 16) for i in (0, 2, 4))
     assert all(n >= o for n, o in zip(new, orig))

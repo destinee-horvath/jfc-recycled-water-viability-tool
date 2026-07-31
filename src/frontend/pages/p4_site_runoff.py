@@ -60,8 +60,7 @@ def page_site_runoff(results):
     )], "site_runoff")
 
     # Tri-state, not a checkbox — "unchecked" can't distinguish "confirmed no"
-    # from "never looked at it". Also handles legacy True/False from CSVs
-    # saved before this field became a tri-state.
+    # from "never looked at it". Also maps legacy True/False from old CSVs.
     slope_value = d.get("slope_toward_waterway")
     if slope_value is True:
         slope_value = "Yes"

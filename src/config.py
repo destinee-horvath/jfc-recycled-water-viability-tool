@@ -1,15 +1,10 @@
 """
 config.py
 =========
-Single source of truth for the Recycled Water Viability Assessment Tool.
-
-Holds:
-  * The global colour theme (change the scheme in ONE place).
-  * Static reference data: regulation citations, the 12 RWMS elements,
-    AGWR-related thresholds, and the dropdown option lists used by the UI.
-
-Everything here is constant for the life of a run, so the frontend wraps
-the loaders in ``@st.cache_data`` to avoid recomputing on every rerun.
+Single source of truth for the Recycled Water Viability Assessment Tool:
+colour theme, regulation citations, RWMS elements, AGWR thresholds, and
+UI dropdown option lists. Constant for the life of a run — cached via
+``@st.cache_data`` in the frontend.
 """
 
 import os
@@ -19,14 +14,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Anchored to this file's own location, not the process's working directory,
-# so SAVE_DIR stays valid regardless of where the app is launched from (see
-# frontend/app.py's IMAGES_DIR for the same pattern).
+# Anchored to this file's location (not cwd) so SAVE_DIR stays valid
+# regardless of launch directory — same pattern as frontend/app.py's IMAGES_DIR.
 BASE_DIR = Path(__file__).resolve().parent
 
 # ----------------------------------------------------------------------------
-# GLOBAL VARIABLES — COLOUR THEME
-# Change the scheme here and it propagates to every badge, button and verdict.
+# COLOUR THEME — change here to propagate everywhere
 # ----------------------------------------------------------------------------
 COLOUR_PRIMARY = "#1F3864"      # dark navy  — headers, primary actions
 COLOUR_SECONDARY = "#2E75B6"    # mid blue   — secondary elements
@@ -36,8 +29,7 @@ COLOUR_DANGER = "#E24B4A"       # red        — NOT VIABLE / REJECT / Not met
 COLOUR_NEUTRAL = "#888780"      # gray       — neutral / N/A states
 COLOUR_BG = "#FFFFFF"           # background
 
-# Map a check/verdict state string to its colour. Use this everywhere so a
-# colour always means the same thing.
+# Map a verdict state to its colour — use this everywhere for consistency.
 STATE_COLOURS = {
     "PROCEED": COLOUR_SUCCESS,
     "CONDITIONAL": COLOUR_WARNING,
@@ -59,9 +51,7 @@ DISCLAIMER = (
     "qualified person before any works commence."
 )
 
-# What to have ready before starting an assessment — shown on the Setup page
-# so engineers know what to gather first, rather than discovering it phase by
-# phase.
+# Shown on the Setup page so engineers know what to gather before starting.
 TOOL_PREREQUISITES = [
     "Water source & supplier details",
     "Supplier's approval (council, water authority, or stormwater)",
@@ -74,9 +64,8 @@ TOOL_PREREQUISITES = [
     "WHS arrangements: SWMS, PPE, signage",
 ]
 
-# Single source of truth for every phase's display name — no "Phase N"
-# prefix anywhere in the UI. Referenced by PHASES below and by the
-# regulation-reference builders further down.
+# Single source of truth for phase display names (no "Phase N" prefix in UI).
+# Used by PHASES below and the regulation-reference builders further down.
 PHASE_DISPLAY_NAMES = {
     "supplier_approval": "Supplier & Dual Approval",
     "water_quality": "Water Quality",
@@ -87,12 +76,10 @@ PHASE_DISPLAY_NAMES = {
     "financial": "Financial Feasibility",
 }
 
-# The sequential phases (id, label, short description, whether a REJECT here
-# is a HARD/mandatory failure). This is a checklist tool, not a sequential
-# gate: every phase is always assessed and always editable regardless of any
-# other phase's outcome. A REJECT is surfaced as a blocking item via
-# backend.readiness_summary(), but it never blocks the user from working
-# through the remaining phases.
+# Phase list (id, label, description, whether a REJECT is a hard/mandatory
+# failure). Checklist, not a gate: every phase stays assessed and editable
+# regardless of others' outcomes; REJECT surfaces via backend.readiness_summary()
+# as a blocking item but never blocks navigation.
 PHASES = [
     {
         "id": "financial",
@@ -138,18 +125,14 @@ PHASES = [
     },
 ]
 
-# Lookup by id — used wherever code needs a phase's metadata without relying
-# on PHASES' list position (backend/orchestration.py can't import
-# frontend/refdata.py, which has its own copy of this for frontend use).
+# Lookup by id, not list position (backend/orchestration.py can't import
+# frontend/refdata.py, which keeps its own copy for frontend use).
 PHASE_BY_ID = {p["id"]: p for p in PHASES}
 
 # ----------------------------------------------------------------------------
-# UI GROUPING — display/execution order and section structure. One flag
-# switches layouts without touching frontend/backend code. Every phase page
-# looks itself up via PHASE_BY_ID (never a positional PHASES[N] index), so
-# this order is free to change — it drives the Setup-page prerequisites
-# list, the progress bar, the Summary page's phase columns, and the
-# Next-button flow (frontend/state.py's _next_phase_label).
+# UI GROUPING — order/section structure. Pages look themselves up via
+# PHASE_BY_ID (never positional), so this order is free to change; drives
+# Setup prerequisites, progress bar, Summary columns, and Next-button flow.
 # ----------------------------------------------------------------------------
 USE_GROUPED_SECTIONS = True
 
@@ -167,10 +150,9 @@ GROUPED_PHASE_ORDER = [
 ]
 PHASE_ORDER = GROUPED_PHASE_ORDER if USE_GROUPED_SECTIONS else FLAT_PHASE_ORDER
 
-# Section grouping for the grouped UI. Phase IDs are descriptive, not
-# numbered — they're baked into every saved assessment CSV as column
-# prefixes (e.g. water_quality.xxx / rwmp.xxx), so changing an id still
-# orphans existing saved files; re-save any assessment after an id rename.
+# Section grouping for the grouped UI. Phase IDs are baked into saved CSVs
+# as column prefixes (e.g. water_quality.xxx) — renaming an id orphans
+# existing saved files; re-save assessments after any rename.
 PHASE_SECTIONS = [
     {"title": "Financial Feasibility", "phases": ["financial"]},
     {"title": "Compliance Requirements", "phases": ["supplier_approval", "rwmp", "water_quality"]},
@@ -180,7 +162,6 @@ PHASE_SECTIONS = [
 # ----------------------------------------------------------------------------
 # PHASE 1 — water source, supplier authority, and DUAL APPROVAL
 # ----------------------------------------------------------------------------
-# Narrowed to the common sources engineers actually encounter.
 WATER_SOURCES = [
     "Treated effluent",
     "Stormwater",
@@ -200,10 +181,9 @@ SUPPLIER_APPROVAL_REFS = {
         "Water Management Act 2000, s.292(1)(a)",
 }
 
-# DUAL APPROVAL — the USER's own approval to USE the water for this purpose.
-# Supplier approval (s.60/s.292/s.68) does NOT automatically permit the user's
-# intended use. Defaults (last item) to "Unconfirmed" so the engineer isn't
-# forced into a binary choice before checking their documents.
+# DUAL APPROVAL — the user's own approval to USE the water; supplier approval
+# (s.60/s.292/s.68) doesn't grant this automatically. Defaults to
+# "Unconfirmed" so the engineer isn't forced into a binary choice.
 USER_APPROVAL_STATES = [
     "Permitted for this use",
     "Not permitted for this use",
@@ -216,19 +196,14 @@ DUAL_APPROVAL_REF = (
     "treated effluent is NOT approval to USE the water."
 )
 
-# Tri-state approval-held answer, reused by every supplier-side approval
-# check below (stormwater / council / water authority / private scheme).
-# "Unconfirmed" is CONDITIONAL rather than REJECT for all of these — none of
-# them is a hard reject the way "operated without approval" or "not
-# permitted" (dual approval) are; they're all remediable by obtaining or
-# confirming the relevant approval.
+# Tri-state, reused by every supplier-side approval check. "Unconfirmed" is
+# CONDITIONAL not REJECT — remediable by obtaining/confirming approval,
+# unlike a hard reject (e.g. dual approval's "not permitted").
 APPROVAL_STATES = ["Yes", "No", "Unconfirmed"]
 
-# Stormwater bypasses the standard s.60/s.292/s.68 supplier framework. Unlike
-# that framework (where "No" is a hard REJECT because it requires a
-# pre-existing ministerial approval), stormwater's s.68/development consent/
-# WMA 2000 approvals are obtainable — so missing or unconfirmed approval here
-# is CONDITIONAL, never a hard reject.
+# Stormwater bypasses s.60/s.292/s.68. Unlike that framework ("No" = hard
+# REJECT, needs pre-existing ministerial approval), stormwater's approvals
+# are obtainable, so missing/unconfirmed is CONDITIONAL, never a hard reject.
 STORMWATER_APPROVAL_REF = (
     "s.60/s.292/s.68 don't apply to stormwater. Confirm s.68 council "
     "approval, development consent, and WMA 2000 approvals instead — these "
@@ -236,9 +211,7 @@ STORMWATER_APPROVAL_REF = (
     "hard reject."
 )
 
-# In Sydney Water / Hunter Water operational areas, s.68 LGA does not apply
-# to stormwater at all — the pathway is the Sydney Water Stormwater
-# Harvesting Agreement plus WMA 2000 approvals instead.
+# s.68 LGA doesn't apply to stormwater in Sydney/Hunter Water areas.
 SYDNEY_HUNTER_REF = (
     "s.68 LGA does not apply in Sydney Water or Hunter Water operational "
     "areas — proceed via the Sydney Water Stormwater Harvesting Agreement "
@@ -246,10 +219,8 @@ SYDNEY_HUNTER_REF = (
 )
 
 # ----------------------------------------------------------------------------
-# PHASE 1 — plain-language content for engineers unfamiliar with NSW
-# legislation. Shown ALONGSIDE the regulation citation (never replacing it)
-# and purely informational — none of this feeds backend/phases/p1_supplier_approval.py's
-# pass/reject gate logic.
+# PHASE 1 — plain-language content, shown alongside (not replacing) the
+# citation. Informational only — doesn't feed p1_supplier_approval.py's gate logic.
 # ----------------------------------------------------------------------------
 SUPPLIER_APPROVAL_PLAIN = {
     "Council-run scheme": "Council needs approval to both run the plant and supply the water. Confirm both are current.",
@@ -297,16 +268,12 @@ TOOLTIP_DUAL_APPROVAL = (
 )
 
 # ----------------------------------------------------------------------------
-# SOURCE-DOCUMENTATION LOOKUP NOTES — short, scannable pointers (shown via
-# st.caption, not a text block) to where a user without the source document
-# in hand yet can go check, for fields where a public register exists.
+# SOURCE-DOCUMENTATION LOOKUP NOTES — scannable pointers (st.caption) to
+# where to check, for fields with a public register.
 # ----------------------------------------------------------------------------
 
-# Ministerial approval under LGA 1993 s.60 / WMA 2000 s.292 isn't itself
-# published as a searchable public register — the NSW Water Register covers
-# licences/approvals/dealings more broadly, and DPIE's own approvals page
-# explains the s.60/s.292 process. Neither is a direct per-scheme lookup, so
-# this is framed as "where to start", not "search here for your answer".
+# No direct per-scheme register exists for s.60/s.292 ministerial approval —
+# framed as "where to start", not a definitive lookup.
 MINISTERIAL_APPROVAL_LOOKUP_NOTE = (
     "Don't have this confirmed yet? Start with the "
     "[NSW Water Register](https://waterregister.waternsw.com.au/search/SearchWizard.jsp) "
@@ -322,18 +289,15 @@ EPL_REGISTER_NOTE = (
     "licensee name or location."
 )
 
-# No confirmed public RWMP register exists — DPIE is understood to be
-# working toward publishing approval instruments, but RWMP status isn't
-# independently searchable yet. Deliberately no link here; add one only
-# once a public register is confirmed to exist.
+# No public RWMP register exists yet — deliberately no link; add one once
+# a register is confirmed.
 RWMP_LOOKUP_NOTE = (
     "No public RWMP register is available to check this against — confirm "
     "current RWMP status directly with the supplier."
 )
 
 # ----------------------------------------------------------------------------
-# ROADWORKS APPLICATION TYPES — each is assessed against its own hard
-# specification table (drives Phase 3 water-quality routing).
+# ROADWORKS APPLICATION TYPES — each routes to its own Phase 3 spec table.
 # ----------------------------------------------------------------------------
 APPLICATION_TYPES = [
     "Concrete Mixing",
@@ -341,15 +305,14 @@ APPLICATION_TYPES = [
     "Earthworks (Compaction)",
 ]
 
-# Kept as a general Phase 3 field (not gated here) — Phase 6 cross-checks the
-# selected class against the WHS contact-risk level.
+# General Phase 3 field (not gated here) — cross-checked against WHS
+# contact-risk level in Phase 6.
 WATER_CLASSES = ["Class A", "Class B", "Class C", "Class D", "Unclassified"]
 
 # ----------------------------------------------------------------------------
 # CONCRETE MIXING — AS 1379
 # ----------------------------------------------------------------------------
-# Table 2.1 — compressive strength vs a water-source-free control sample
-# (7 d and 28 d, at the corresponding age).
+# Table 2.1 — compressive strength vs a control sample, at 7d/28d.
 CONCRETE_STRENGTH_MIN_PCT = 90
 CONCRETE_STRENGTH_REF = "AS 1379 Table 2.1"
 
@@ -365,8 +328,8 @@ CONCRETE_TURBIDITY_MAX_NTU = 5.0
 CONCRETE_TURBIDITY_TARGET_NTU = 1.5
 CONCRETE_TURBIDITY_REF = "AS 1379 — filtered water turbidity"
 
-# Table 2.3 — reportable properties only. AS 1379 prescribes no pass/fail
-# threshold for these; they're recorded for the file, not gated.
+# Table 2.3 — reportable only; AS 1379 sets no pass/fail threshold, so
+# these are recorded, not gated.
 CONCRETE_TABLE_2_3 = {
     "conc_tds":      {"label": "Total dissolved solids", "ref": "AS 1379 Table 2.3 — AS 3550.4"},
     "conc_chloride": {"label": "Chloride as Cl",          "ref": "AS 1379 Table 2.3 — APHA 4500-Cl"},
@@ -374,14 +337,14 @@ CONCRETE_TABLE_2_3 = {
     "conc_sodium":   {"label": "Sodium equivalent",       "ref": "AS 1379 Table 2.3 — APHA 3500"},
 }
 
-# Applies to Concrete Mixing too (not just Dust Suppression), at Earthworks'
-# less-restrictive tier — see EARTHWORKS_MICRO_TABLE.
+# Applies to Concrete Mixing too, at Earthworks' less-restrictive tier —
+# see EARTHWORKS_MICRO_TABLE.
 CONCRETE_ECOLI = {"label": "E. coli", "unit": "cfu/100mL", "max": 100,
                    "ref": "AGWR Phase 1 (2006) Table 3.8"}
 
 # ----------------------------------------------------------------------------
-# EARTHWORKS (COMPACTION) — Table 3-1 impurity limits (Sydney Water Recycled)
-# (hard specification limits; exceeding renders water unsuitable for use)
+# EARTHWORKS (COMPACTION) — Table 3-1 impurity limits (Sydney Water Recycled),
+# hard limits; exceeding renders water unsuitable.
 # ----------------------------------------------------------------------------
 EARTHWORKS_TABLE_3_1 = {
     "ew_sugar":    {"label": "Sugar",                  "unit": "ppm", "max": 100,   "ref": "Table 3-1 — AS 1141.35"},
@@ -394,10 +357,9 @@ EARTHWORKS_TABLE_3_1 = {
     "ew_tss":      {"label": "Total suspended solids", "unit": "ppm", "max": 15000, "ref": "Table 3-1 — AS 3550.4 or APHA 2540 D"},
 }
 
-# Applies to all three application types, not just Dust Suppression.
-# Earthworks isn't public-facing, so this uses a less-strict tier than Dust
-# Suppression's below (E. coli ≤100 vs ≤1 cfu/100mL) — this tier split isn't
-# explicitly spelled out in the source guidance, worth double-checking.
+# Applies to all three application types. Earthworks isn't public-facing,
+# so uses a less-strict tier than Dust Suppression (E. coli ≤100 vs ≤1) —
+# this split isn't explicit in source guidance, worth double-checking.
 EARTHWORKS_MICRO_TABLE = {
     "ew_bod_mgl": {"label": "BOD",                  "unit": "mg/L",      "max": 20,  "ref": "AGWR Phase 1 (2006) Table 3.8"},
     "ew_ss_mgl":  {"label": "Suspended Solids (SS)", "unit": "mg/L",      "max": 30,  "ref": "AGWR Phase 1 (2006) Table 3.8"},
@@ -405,9 +367,8 @@ EARTHWORKS_MICRO_TABLE = {
 }
 
 # ----------------------------------------------------------------------------
-# DUST SUPPRESSION — Table 3.8 (treatment processes & on-site controls for
-# designated uses of recycled water from treated sewage). Dust suppression is
-# public-facing, so this uses the "unrestricted access" municipal-use tier.
+# DUST SUPPRESSION — Table 3.8. Public-facing, so uses the "unrestricted
+# access" municipal-use tier.
 # ----------------------------------------------------------------------------
 DUST_PATHOGEN_MAX_PCT = 0.1   # max % virus/protozoa/bacteria present
 DUST_PATHOGEN_REF = "Table 3.8 — unrestricted access"
@@ -465,13 +426,10 @@ SENSITIVE_ENVIRONMENTS = [
 ]
 
 # ----------------------------------------------------------------------------
-# PHASE 5 — Soil & Site Conditions
-#
-# USCS soil classification + pavement-layer data (subgrade/sub-base/base) —
-# feeds Financial Feasibility's defaults, always PROCEEDs (USCS_SOIL_TABLE
-# below). Plus a SAR/EC structural-stability screen for the water source
-# against the NATURAL subgrade soil (see the SAR/EC section further down and
-# backend/phases/p5_soil_conditions.py).
+# PHASE 5 — Soil & Site Conditions. USCS classification + pavement-layer
+# data feed Financial Feasibility's defaults (always PROCEEDs); plus a
+# SAR/EC structural-stability screen against the natural subgrade soil
+# (see SAR/EC section below, backend/phases/p5_soil_conditions.py).
 # ----------------------------------------------------------------------------
 SOIL_TABLE_REF = "Carter & Bentley (1991), Table 5-17; FHWA NHI-06-088"
 SOIL_TABLE_CITATION = (
@@ -480,10 +438,9 @@ SOIL_TABLE_CITATION = (
     "https://www.fhwa.dot.gov/engineering/geotech/pubs/nhi06088.pdf"
 )
 
-# USCS soil classification reference table — dry unit weight and optimum
-# moisture content by soil category/class. Midpoint values are the arithmetic
-# mean of each range; used to pre-fill the OMC/density inputs, which remain
-# editable so the engineer can override with site-specific data.
+# USCS reference table: dry unit weight and OMC by soil class. Midpoints
+# are the arithmetic mean of each range, used to pre-fill editable OMC/
+# density inputs.
 USCS_SOIL_TABLE = {
     "Gravel/Sand mixtures": {
         "GW": {
@@ -593,35 +550,28 @@ USCS_SOIL_TABLE = {
     },
 }
 
-# Dry unit weight conversion: 1 kN/m3 = 101.97 kg/m3
-# Use this to convert kN/m3 midpoints to kg/m3 for the
-# financial phase volume calculations
+# Dry unit weight conversion: 1 kN/m3 = 101.97 kg/m3 — used to convert
+# kN/m3 midpoints to kg/m3 for financial-phase volume calcs.
 KN_M3_TO_KG_M3 = 101.97
 
-# Base layer has no USCS classification — a single OMC default per standard
-# practice, no soil category/class selection required.
+# Base layer has no USCS classification — single OMC default, no category/class selection.
 BASE_LAYER_DEFAULTS = {
     "omc_range": (8, 14),
     "omc_mid": 11.0,
-    # Dry unit weight default, in kN/m3 — equivalent to FINANCIAL_DEFAULTS'
-    # base density_kg_m3 (1900) via KN_M3_TO_KG_M3, so leaving this field
-    # untouched doesn't silently diverge from Financial Feasibility's own
-    # fallback for base density.
+    # kN/m3 default — matches FINANCIAL_DEFAULTS' base density_kg_m3 (1900)
+    # via KN_M3_TO_KG_M3, so it won't silently diverge from that fallback.
     "density_kN_m3_mid": 18.6,
     "note": "Base layer OMC default per standard practice. "
             "No USCS classification required for base.",
 }
 
 # ----------------------------------------------------------------------------
-# PHASE 5 — SAR/EC soil structural stability (recycled water on subgrade)
+# PHASE 5 — SAR/EC soil structural stability: whether the water risks
+# degrading the natural subgrade's structure (dispersion/slaking). Never a
+# hard REJECT — remediable via soil testing + gypsum/lime amendment.
 #
-# Whether the water risks degrading the NATURAL subgrade soil's structure
-# (dispersion/slaking). Never a hard REJECT — remediable via soil testing +
-# gypsum/lime amendment.
-#
-# Stable if actual SAR <= SOIL_STABILITY_SLOPE*EC + SOIL_STABILITY_INTERCEPT
-# at that EC; above the line is unstable. Team-derived fit (see
-# SOIL_SAR_EC_REF). EC is dS/m (1 dS/m = 1000 uS/cm) — don't mix with the
+# Stable if SAR <= SOIL_STABILITY_SLOPE*EC + SOIL_STABILITY_INTERCEPT
+# (team-derived fit, see SOIL_SAR_EC_REF). EC is dS/m — don't mix with the
 # USSL uS/cm axis below.
 # ----------------------------------------------------------------------------
 SOIL_SAR_EC_REF = (
@@ -634,9 +584,8 @@ SOIL_SAR_EC_REF = (
 SOIL_STABILITY_SLOPE = 4.3
 SOIL_STABILITY_INTERCEPT = -0.4
 
-# Plain-language "what is this?" note for the SAR/EC fields — shown in an
-# expander on the Soil & Site Conditions page so an engineer unfamiliar with
-# these two parameters isn't left guessing whether they need a separate test.
+# Plain-language "what is this?" note for SAR/EC, shown in an expander on
+# the Soil & Site Conditions page.
 SAR_EC_WHAT_IS_THIS = (
     "**Sodium Adsorption Ratio (SAR)** measures the proportion of sodium to "
     "calcium/magnesium in the water — high SAR water can cause clay soils "
@@ -652,10 +601,9 @@ SAR_EC_WHAT_IS_THIS = (
     "this is not usually a separate test run or a separate sample."
 )
 
-# USSL (Richards, 1954) salinity-hazard (C-class) boundaries — fixed,
-# EC-only, shown for context. S1-S4 sodium-hazard sub-classification isn't
-# reproduced (its boundaries are sloped/EC-dependent and unverified for this
-# tool) — the SAR/EC stability check above is the operative risk call.
+# USSL (Richards, 1954) C-class salinity boundaries — fixed, EC-only,
+# shown for context. S1-S4 sub-classification omitted (unverified for this
+# tool); SAR/EC check above is the operative risk call.
 SOIL_USSL_REF = "USSL Diagram (Richards, 1954), USDA Agriculture Handbook No. 60"
 SOIL_USSL_C_CLASS_US_CM = [
     (250,           "C1 (Low salinity hazard)"),
@@ -664,11 +612,9 @@ SOIL_USSL_C_CLASS_US_CM = [
     (float("inf"),  "C4 (Very high salinity hazard)"),
 ]
 
-# Regions (config.FINANCIAL_REGIONS keys) whose long-term average rainfall is
-# well below Figure 2's ~1000mm/yr assumption — salt leaching through the
-# profile is slower than the chart assumes there, so a PROCEED/marginal
-# result there may understate the true risk. Indicative BOM long-term
-# averages only; confirm against the actual site before relying on this flag.
+# FINANCIAL_REGIONS keys with average rainfall well below Figure 2's
+# ~1000mm/yr assumption — salt leaching is slower there, so PROCEED/marginal
+# results may understate risk. Indicative BOM averages only; confirm on-site.
 SOIL_LOW_RAINFALL_REGIONS = {"Dubbo", "Wagga Wagga"}
 
 # ----------------------------------------------------------------------------
@@ -677,9 +623,8 @@ SOIL_LOW_RAINFALL_REGIONS = {"Dubbo", "Wagga Wagga"}
 WHS_REF = ("Work Health and Safety Act 2011 (NSW) & WHS Regulation 2017 (NSW); "
            "SafeWork NSW guidance on recycled/non-potable water")
 
-# Mandatory WHS confirmations required before works commence. Shortfalls are
-# remediable, so they return CONDITIONAL (action-before-works) rather than a
-# hard REJECT.
+# Mandatory pre-works confirmations. Shortfalls are remediable, so they
+# return CONDITIONAL, not a hard REJECT.
 WHS_CHECKS = [
     ("whs_notified_class",  "Workers notified of the water classification / source"),
     ("whs_health_risks",    "Health risks (pathogen/chemical exposure) communicated to workers"),
@@ -710,12 +655,9 @@ WHS_TREATMENT_NOTE = ("Treatment standard is directly linked to contact risk —
 NSW_HEALTH_NOTE = ("NSW Health may be involved in the approval process where human "
                    "contact with recycled water is possible.")
 
-# Indicative buffer-zone distance RANGE to sensitive receptors (houses,
-# schools, playing fields, roads, public open space, water bodies), by AGWR
-# water quality class (Phase 3's water_class). Always surfaces as CONDITIONAL
-# — no NSW Health or AGWR source maps a distance directly to AGWR class, so
-# there is no real number to test a yes/no distance question against; see
-# AGWR_BUFFER_ZONE_LIMITATION_NOTE. A and B share the same indicative range.
+# Indicative buffer-zone distance range to sensitive receptors, by AGWR
+# class (Phase 3's water_class). Always CONDITIONAL — no source maps a
+# distance directly to class; see AGWR_BUFFER_ZONE_LIMITATION_NOTE.
 AGWR_BUFFER_ZONE_RANGE_METRES = {
     "Class A": (25, 30),
     "Class B": (25, 30),
@@ -730,9 +672,8 @@ AGWR_BUFFER_ZONE_LIMITATION_NOTE = (
     "distance directly to AGWR class. Confirm actual distance with NSW "
     "Health on a per-project basis.")
 
-# Minimum AGWR water class required for a given human-contact risk level
-# (AGWR Phase 1 (2006) — water quality class framework). None means any class
-# is acceptable. Cross-checked against the class selected in Phase 3.
+# Minimum AGWR class per contact-risk level (None = any class acceptable).
+# Cross-checked against the class selected in Phase 3.
 CONTACT_RISK_MIN_CLASS = {
     "None expected":      None,
     "Workers only":       "Class B",
@@ -741,22 +682,18 @@ CONTACT_RISK_MIN_CLASS = {
 WATER_CLASS_REF = "AGWR Phase 1 (2006) — water quality class framework"
 
 # ----------------------------------------------------------------------------
-# PHASE 7 — Financial Feasibility (never a hard reject). Cost/volume model:
-# pavement + optional dust-suppression water demand, trucked in from
-# potable/recycled sources, compared whole-of-project under normal/drought
+# PHASE 7 — Financial Feasibility (never a hard reject). Pavement + dust-
+# suppression water demand, trucked in, compared under normal/drought
 # pricing. See backend/phases/p7_financial.py.
 # ----------------------------------------------------------------------------
 FINANCIAL_REF = ("Whole-of-life cost comparison vs potable baseline, including "
                  "trucking. Unfavourable cost is CONDITIONAL only — the engineer "
                  "may proceed for sustainability / supply-security reasons.")
 
-# Default values for every financial input — starting figures, to be
-# reviewed with finance / the trucking contractor / the relevant water
-# authority before being relied on operationally. Single source of truth:
-# frontend/pages/p7_financial.py falls back to these via d.setdefault(...),
-# and backend/phases/p7_financial.py falls back to these when a key is
-# missing from the input dict (so calling the backend directly, e.g. from a
-# test, still gets sensible values).
+# Starting figures — review with finance/trucking contractor/water authority
+# before relying on operationally. Single source of truth: both
+# frontend/pages/p7_financial.py and backend/phases/p7_financial.py fall
+# back to these when a key is missing.
 FINANCIAL_DEFAULTS = {
     # --- Section 1: Water costs ---
     "water_cost_mode": "Standard",       # "Standard" | "Custom"
@@ -766,9 +703,8 @@ FINANCIAL_DEFAULTS = {
     "recycled_cost_normal": 2.22,        # $/kL — Custom mode only
 
     # --- Section 2: Pavement profile (per layer) ---
-    # "included" (default True) lets the engineer exclude a layer that
-    # isn't relevant to this job — excluded layers contribute 0 to the
-    # water volume/cost totals but their figures are still shown.
+    # "included" (default True) excludes a layer from volume/cost totals
+    # while still showing its figures.
     "pavement_layers": {
         "subgrade": {"omc_pct": 12.0, "mc_pct": 8.0, "thickness_m": 0.3, "density_kg_m3": 1700.0, "included": True},
         "subbase":  {"omc_pct": 9.0,  "mc_pct": 6.0, "thickness_m": 0.2, "density_kg_m3": 1800.0, "included": True},
@@ -784,7 +720,7 @@ FINANCIAL_DEFAULTS = {
 
     # --- Section 4: Transport & operational costs ---
     "num_trucks": 5,
-    "hire_rate_per_hr": 200.0,      # $200/hr = truck + driver only, verified 2026-07-24 — does not include fuel, which is calculated separately
+    "hire_rate_per_hr": 200.0,      # truck + driver only, verified 2026-07-24 — fuel calculated separately
     "fuel_efficiency": 40.0,        # L/100km
     "diesel_price": 2.00,           # $/L
     "trips_per_truck": 4,
@@ -795,43 +731,34 @@ FINANCIAL_DEFAULTS = {
     "area_type": "Urban",           # "Urban (dense city)" | "Urban" | "Rural" — sets avg_speed_kmh's default
     "avg_speed_kmh": 50.0,
 
-    # --- Dust suppression — no application-type gate on this (Water
-    # Quality's selected application never excludes it), but the engineer
-    # can untick "included" below if this project doesn't use dust
-    # suppression at all — same pattern as a pavement layer's "included". ---
+    # --- Dust suppression — no application-type gate; untick "included"
+    # if unused, same pattern as a pavement layer. ---
     "dust_suppression_included": True,
-    "surface_area_m2": 36000.0,          # bare fallback only (e.g. financial_analysis({})) — the live page always overwrites this from Road Geometry on first render, see DUST_SITE_CONDITIONS_WATER_L_M2/DUST_TEMPERATURE_APPLICATIONS_PER_DAY below
+    "surface_area_m2": 36000.0,          # bare fallback only — live page overwrites from Road Geometry on first render
     "site_conditions": "Medium",
     "temperature_conditions": "Sunny",
     "applications_per_day": 5,
     "water_per_m2_L": 4.0,
     "effective_area_pct": 30.0,
-    # A legitimate, independent user input (not derived from any other
-    # value), used both as the dust suppression day count here and,
-    # separately, as dust_suppression_days in the delivery-day split (see
-    # backend/phases/p7_financial.py).
+    # Independent input, also used as dust_suppression_days in the
+    # delivery-day split (see backend/phases/p7_financial.py).
     "project_duration_days": 20,
 
-    # --- Concrete Kerb + Elements — no application-type gate on this
-    # either, but likewise toggleable via "included" for jobs with no
-    # concrete kerb/element water demand. ---
+    # --- Concrete Kerb + Elements — no gate; toggleable via "included". ---
     "concrete_included": True,
     "kerb_type": "SL (standard road)",
     "water_cement_ratio": 0.42,
     "additional_concrete_volume_m3": 0.0,   # drainage pits, aprons, etc. — not covered by the kerb lookup
 }
 
-# Concrete Kerb + Elements' kerb concrete volume per metre of road length
-# (m^3/m). Real-world kerb-volume data, not a placeholder.
+# Kerb concrete volume per metre of road length (m^3/m). Real-world data.
 CONCRETE_KERB_VOLUME_PER_M = {
     "SA (standard residential)": 0.154,
     "SL (standard road)": 0.102,
 }
 
-# Concrete Kerb + Elements' water-cement-ratio -> water volume fraction of
-# total concrete volume. Real lookup data, not a placeholder — the 0.38
-# entry is 0.133 (corrected from a typo in the original source data,
-# which read 13.3).
+# Water-cement-ratio -> water volume fraction. Real data, not a
+# placeholder — the 0.38 entry (0.133) is corrected from a source typo (13.3).
 CONCRETE_WATER_CEMENT_RATIO_TABLE = {
     0.35: 0.1225,
     0.38: 0.133,
@@ -851,27 +778,21 @@ FINANCIAL_REGIONS = {
 # Default average travel speed by area type, real-world reference data.
 AREA_TYPE_SPEEDS = {"Urban (dense city)": 40.0, "Urban": 50.0, "Rural": 60.0}
 
-# Default water volume per m² by site condition (L/m²), and default
-# applications per day by temperature condition — sets water_per_m2_L's and
-# applications_per_day's defaults respectively when the corresponding
-# selectbox changes (same "auto-fill, editable" pattern as AREA_TYPE_SPEEDS
-# above for avg_speed_kmh).
+# Sets water_per_m2_L / applications_per_day defaults when the corresponding
+# selectbox changes — same auto-fill/editable pattern as AREA_TYPE_SPEEDS.
 DUST_SITE_CONDITIONS_WATER_L_M2 = {"Low": 1.0, "Medium": 2.0, "High": 4.0}
 DUST_TEMPERATURE_APPLICATIONS_PER_DAY = {"Overcast": 3, "Sunny": 4, "Hot and Sunny": 6}
 
-# Optional OpenRouteService integration (Phase Financial's transport distance
-# inputs) — geocodes an address and looks up driving distance, as an
-# additive convenience alongside the always-available manual distance entry.
-# Entirely optional: if ORS_API_KEY isn't set, ORS_ENABLED is False and the
-# frontend hides the address-lookup UI, falling back to manual entry only.
+# Optional OpenRouteService integration — geocodes an address and looks up
+# driving distance, alongside always-available manual entry. If
+# ORS_API_KEY isn't set, ORS_ENABLED is False and the UI hides address lookup.
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 ORS_ENABLED = bool(ORS_API_KEY)
 
 ORS_GEOCODE_URL = "https://api.openrouteservice.org/geocode/search"
 ORS_VEHICLE_PROFILE = "driving-hgv"
-# HGV = heavy goods vehicle — appropriate for water trucks. Change to
-# "driving-car" if HGV routing causes issues in regional/rural areas; the
-# directions URL below is derived from this, so changing it here is enough.
+# HGV = heavy goods vehicle, appropriate for water trucks. Change to
+# "driving-car" if HGV routing fails in rural areas — directions URL derives from this.
 ORS_DIRECTIONS_URL = f"https://api.openrouteservice.org/v2/directions/{ORS_VEHICLE_PROFILE}"
 
 
@@ -883,17 +804,12 @@ NSW_RECYCLED_WATER_ROADMAP_URL = (
 )
 
 # ----------------------------------------------------------------------------
-# REGULATION REFERENCE LINKS — source URLs for the citations shown in the
-# "☰ Regulation Reference" panel only (frontend.components.render_phase_result
-# and frontend.app's sidebar). Deliberately NOT merged into the plain-text
-# constants above (SUPPLIER_APPROVAL_REFS, POEO_REFS, WHS_REF, etc.) — those
-# are reused verbatim in the inline phase-outcome cards, the PDF export, and
-# the Excel export, none of which render markdown/HTML links, so embedding a
-# link in them would show up as literal "[text](url)" there.
+# REGULATION REFERENCE LINKS — URLs for the "Regulation Reference" panel
+# only. Kept separate from the plain-text ref constants above (used verbatim
+# in cards/PDF/Excel exports, which don't render markdown links).
 #
-# NSW legislation links point to the NSW Parliamentary Counsel's Office site
-# (legislation.nsw.gov.au), which always redirects to the *current in-force
-# version* — no need to update these later as an Act is amended. Verified
+# NSW legislation links go to legislation.nsw.gov.au, which redirects to the
+# current in-force version — no update needed as Acts are amended. Verified
 # 2026-07-24.
 # ----------------------------------------------------------------------------
 LGA1993_URL = "https://legislation.nsw.gov.au/view/html/inforce/current/act-1993-030"
@@ -919,10 +835,8 @@ NSW_HEALTH_URL = "https://www.health.nsw.gov.au/environment/water/Pages/wastewat
 
 
 def _cited(text: str, *links: tuple[str, str]) -> str:
-    """Append '  \\nSource: [Label](url) · [Label2](url2)' to a citation
-    string, for the Regulation Reference panel's own markdown rendering
-    only. No-op (returns text unchanged) when no source URL is confirmed
-    for that citation yet."""
+    """Append '  \\nSource: [Label](url) · ...' for the Regulation Reference
+    panel's markdown rendering. No-op if no links given."""
     if not links:
         return text
     joined = " · ".join(f"[{label}]({url})" for label, url in links)

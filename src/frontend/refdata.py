@@ -1,8 +1,5 @@
-"""
-frontend/refdata.py
-====================
-Static reference data — cached so it isn't rebuilt every rerun.
-"""
+"""frontend/refdata.py — static reference data, cached so it isn't rebuilt
+every rerun."""
 
 import streamlit as st
 
